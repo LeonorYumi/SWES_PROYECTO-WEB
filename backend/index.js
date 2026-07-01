@@ -12,6 +12,7 @@ const userRoutes = require("./routes/user.routes");
 const protectedRoutes = require("./routes/protected.routes");
 const debugRoutes = require("./routes/debug.routes");
 const { sendEmail } = require("./utils/sendEmail");
+const paypalRoutes = require('./routes/paypalRoutes');
 
 const ADMIN_EMAILS = [
   "leonor.yumi@epn.edu.ec",
@@ -35,6 +36,7 @@ app.use("/api", authRoutes);
 app.use("/api", productRoutes);
 app.use("/api", userRoutes);
 app.use("/api", protectedRoutes);
+app.use('/api/paypal', paypalRoutes);
 
 app.post("/api/contact", async (req, res) => {
   try {

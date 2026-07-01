@@ -2,12 +2,17 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { FaArrowLeft, FaRobot, FaComments, FaWhatsapp } from 'react-icons/fa';
 import { getAll } from '../services/crudService';
+import PaypalButton from './paypalButton';
 
 function EmprendimientoDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pagoExitoso, setPagoExitoso] = useState(false);
+  const [errorPago, setErrorPago] = useState(false);
+
+  const uid = localStorage.getItem('uid');
 
   useEffect(() => {
     const cargar = async () => {
@@ -130,12 +135,48 @@ function EmprendimientoDetalle() {
               </div>
             </div>
 
-            {/* Botón de pago — aquí conectas PayPal después */}
-            <button
-              className="w-full bg-blue-900 hover:bg-blue-950 text-white py-3.5 rounded-xl text-sm font-bold transition-colors duration-200 shadow-sm"
-            >
-              Comprar con PayPal
-            </button>
+            {/* Bloque de pago con PayPal */}
+            <div className="border border-gray-100 rounded-xl p-4 bg-gray-50/50">
+              {pagoExitoso ? (
+                <div className="text-center py-4">
+                  <p className="text-green-600 font-semibold text-sm mb-1">
+                    ¡Pago realizado con éxito! ✅
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Ya podés coordinar la entrega con el vendedor por WhatsApp.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                    Pagar con PayPal
+                  </p>
+                  <PaypalButton
+                    items={[
+                      {
+                        id: item.id,
+                        quantity: 1,
+                        price: item.price,
+                      },
+                    ]}
+                    userId={uid}
+                    onSuccess={(details) => {
+                      console.log('Pago completado:', details);
+                      setPagoExitoso(true);
+                      setErrorPago(false);
+                    }}
+                    onError={() => {
+                      setErrorPago(true);
+                    }}
+                  />
+                  {errorPago && (
+                    <p className="text-red-500 text-xs mt-2 text-center">
+                      Hubo un problema con el pago, intentá de nuevo.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
           {/* COLUMNA LATERAL: placeholder del chat IA en vivo */}
