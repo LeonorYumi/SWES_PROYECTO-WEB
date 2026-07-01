@@ -18,6 +18,8 @@ const Profile = lazy(() => import("./components/Profile"));
 const Settings = lazy(() => import("./components/Settings"));
 const AdminStats = lazy(() => import("./components/AdminStats"));
 const AdminUsers = lazy(() => import("./components/AdminUsers"));
+const EmprendimientoDetalle = lazy(() => import("./components/EmprendimientoDetalle")); 
+
 
 function AppInner() {
   const location = useLocation();
@@ -52,6 +54,7 @@ function AppInner() {
             <Route path="/admin/stats" element={<ProtectedRoute><AdminStats /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/emprendimientos/:id" element={<EmprendimientoDetalle />} />
           </Routes>
         </Suspense>
       </div>

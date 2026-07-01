@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSearch,FaWhatsapp } from 'react-icons/fa';
+import { FaSearch, FaWhatsapp } from 'react-icons/fa';
 import SidebarFilters from './SidebarFilters';
 import { getAll } from '../services/crudService';
 
@@ -118,10 +118,19 @@ function Dashboard() {
                   {it.description || 'Sin descripción disponible.'}
                 </p>
 
+                {/* Botón de ver más información */}
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/emprendimientos/${it.id}`)}
+                    className="inline-flex items-center justify-center rounded-xl bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 text-xs font-semibold transition-colors duration-200 shadow-sm"
+                  >
+                    Ver más información
+                  </button>
+                </div>
+
                 {/* Contenedor Inferior Dinámico (Empujado al fondo) */}
                 <div className="mt-auto">
-                  
-                  {/* LÍNEA DIVISORIA Y AVATAR MINIMALISTA DEL VENDEDOR */}
                   <div className="pt-3 border-t border-gray-100 mb-3 flex items-center gap-2.5">
                     <div className="h-7 w-7 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-bold text-[11px] flex items-center justify-center uppercase shrink-0">
                       {(it.sellerName || it.sellername || 'V').substring(0, 2)}
@@ -135,19 +144,8 @@ function Dashboard() {
                       </p>
                     </div>
                   </div>
-
-                  {/* BOTÓN DE CONTACTO INTEGRADO */}
-                  <a 
-                    href={`https://wa.me/${it.sellerPhone?.replace(/\D/g, '') || it.sellerphone?.replace(/\D/g, '')}`} 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="flex items-center justify-center gap-2 w-full text-center bg-blue-900 hover:bg-blue-950 text-white py-2 rounded-xl text-xs font-bold transition-colors duration-200"
-                  >
-                    <FaWhatsapp className="text-sm" />
-                    Contactar por WhatsApp
-                  </a>
-
                 </div>
+
               </div>
             ))
           )}
