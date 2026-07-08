@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ShoppingCart } from 'lucide-react';
 import logoSwes from '../assets/icono_sistema.png';
+import { useCart } from '../context/CartContext';
 
 function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -9,6 +10,7 @@ function Navbar() {
   const dropdownRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const { totalItems } = useCart();
   const [username, setUsername] = useState(
     typeof window !== 'undefined'
       ? localStorage.getItem('name') || localStorage.getItem('displayName') || localStorage.getItem('email') || 'Usuario'
@@ -83,6 +85,19 @@ function Navbar() {
               );
             })}
           </div>
+
+          <Link
+            to="/carrito"
+            className="relative flex items-center justify-center w-9 h-9 rounded-input text-neutral-subtle hover:text-neutral-text hover:bg-neutral-bg transition-colors"
+            aria-label="Ver carrito de compras"
+          >
+            <ShoppingCart className="w-5 h-5" />
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-brand-primary text-[10px] font-bold text-white flex items-center justify-center">
+                {totalItems}
+              </span>
+            )}
+          </Link>
 
           {/* Botón hamburguesa - Mobile/Tablet */}
           <button

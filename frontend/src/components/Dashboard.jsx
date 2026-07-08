@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaSearch, FaWhatsapp } from 'react-icons/fa';
 import SidebarFilters from './SidebarFilters';
 import { getAll } from '../services/crudService';
+import { useCart } from '../context/CartContext';
 
 function Dashboard() {
   const [items, setItems] = useState([]);
@@ -10,6 +11,7 @@ function Dashboard() {
   const [categoriaActiva, setCategoriaActiva] = useState('todas');
   const [busqueda, setBusqueda] = useState('');
   const navigate = useNavigate();
+  const { addItem } = useCart();
 
   const role = localStorage.getItem('role') || 'visitante';
   const uid = localStorage.getItem('uid');
@@ -119,13 +121,20 @@ function Dashboard() {
                 </p>
 
                 {/* Botón de ver más información */}
-                <div className="mb-4">
+                <div className="mb-4 flex flex-col gap-2">
                   <button
                     type="button"
                     onClick={() => navigate(`/emprendimientos/${it.id}`)}
                     className="inline-flex items-center justify-center rounded-xl bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 text-xs font-semibold transition-colors duration-200 shadow-sm"
                   >
                     Ver más información
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => addItem(it)}
+                    className="inline-flex items-center justify-center rounded-xl border border-blue-900 text-blue-900 px-4 py-2 text-xs font-semibold transition-colors duration-200 hover:bg-blue-50"
+                  >
+                    Agregar al carrito
                   </button>
                 </div>
 

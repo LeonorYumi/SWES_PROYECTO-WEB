@@ -3,17 +3,14 @@ import { useEffect, useState } from 'react';
 import { FaArrowLeft, FaWhatsapp } from 'react-icons/fa';
 import { getAll } from '../services/crudService';
 import ChatRoom from './ChatRoom';
-import PaypalButton from './paypalButton';
+import { useCart } from '../context/CartContext';
 
 function EmprendimientoDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [pagoExitoso, setPagoExitoso] = useState(false);
-  const [errorPago, setErrorPago] = useState(false);
-
-  const uid = localStorage.getItem('uid');
+  const { addItem } = useCart();
 
   useEffect(() => {
     const cargar = async () => {
@@ -136,48 +133,23 @@ function EmprendimientoDetalle() {
               </div>
             </div>
 
-            {/* Bloque de pago con PayPal */}
-            <div className="border border-gray-100 rounded-xl p-5 bg-gray-50/50 shadow-sm">
-              {pagoExitoso ? (
-                <div className="text-center py-4">
-                  <p className="text-green-600 font-semibold text-sm mb-1">
-                    ¡Pago realizado con éxito! ✅
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Ya podés coordinar la entrega con el vendedor por WhatsApp.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                    Pagar con PayPal
-                  </p>
-                  <PaypalButton
-                    items={[
-                      {
-                        id: item.id,
-                        quantity: 1,
-                        price: item.price,
-                      },
-                    ]}
-                    userId={uid}
-                    onSuccess={(details) => {
-                      console.log('Pago completado:', details);
-                      setPagoExitoso(true);
-                      setErrorPago(false);
-                    }}
-                    onError={() => {
-                      setErrorPago(true);
-                    }}
-                  />
-                  {errorPago && (
-                    <p className="text-red-500 text-xs mt-2 text-center">
-                      Hubo un problema con el pago, intentá de nuevo.
-                    </p>
-                  )}
-                </>
-              )}
+            <div className="flex flex-col sm:flex-row gap-3 mb-5">
+              <button
+                type="button"
+                onClick={() => addItem(item)}
+                className="inline-flex items-center justify-center rounded-xl border border-blue-900 px-4 py-2 text-sm font-semibold text-blue-900 hover:bg-blue-50"
+              >
+                Agregar al carrito
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/carrito')}
+                className="inline-flex items-center justify-center rounded-xl bg-blue-900 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-950"
+              >
+                Ver carrito
+              </button>
             </div>
+
           </div>
 
           {/* COLUMNA LATERAL: chat en vivo con el emprendedor */}

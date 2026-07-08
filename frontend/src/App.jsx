@@ -18,7 +18,8 @@ const Profile = lazy(() => import("./components/Profile"));
 const Settings = lazy(() => import("./components/Settings"));
 const AdminStats = lazy(() => import("./components/AdminStats"));
 const AdminUsers = lazy(() => import("./components/AdminUsers"));
-const EmprendimientoDetalle = lazy(() => import("./components/EmprendimientoDetalle")); 
+const EmprendimientoDetalle = lazy(() => import("./components/EmprendimientoDetalle"));
+const CartPage = lazy(() => import("./components/CartPage"));
 
 
 function AppInner() {
@@ -55,6 +56,7 @@ function AppInner() {
             <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/emprendimientos/:id" element={<EmprendimientoDetalle />} />
+            <Route path="/carrito" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
           </Routes>
         </Suspense>
       </div>
