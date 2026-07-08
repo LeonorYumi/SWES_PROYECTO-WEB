@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ChatWidget from "./components/ChatWidget";
 import "./index.css";
 import "./App.css";
 
@@ -60,6 +61,8 @@ function AppInner() {
           </Routes>
         </Suspense>
       </div>
+      {!hideNav && <ChatWidget />}
+      
     </main>
   );
 }
