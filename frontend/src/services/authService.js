@@ -55,3 +55,8 @@ export const googleSignIn = async (accessToken) => {
   const response = await axios.post(`${BACKEND}/google`, { accessToken });
   return response.data;
 };
+
+export const checkActiveSession = async () => {
+  const response = await axios.get(`${BACKEND}/session/active`, getAuthHeaders());
+  return response.data;
+};

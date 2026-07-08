@@ -10,7 +10,7 @@ function ForgotPassword() {
   const [emailSent, setEmailSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
-  const [debugCode, setDebugCode] = useState('');
+  const [resetToken, setResetToken] = useState('');
   const navigate = useNavigate();
 
   const handleSendCode = async (e) => {
@@ -27,13 +27,9 @@ function ForgotPassword() {
         tipo: 'success'
       });
       setEmailSent(true);
+      setResetToken(data.resetToken || '');
       if (data.previewUrl) {
         setPreviewUrl(data.previewUrl);
-      }
-      if (data.debugCode) {
-        setDebugCode(data.debugCode);
-      } else {
-        setDebugCode('');
       }
     } catch (error) {
       console.error('Error en recuperación de contraseña:', error);
@@ -96,7 +92,7 @@ function ForgotPassword() {
         {alerta.mostrar && (
           <div className={`border-l-4 p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 ${
             alerta.tipo === 'error' 
-              ? 'bg-red-50 border-red-500 text-red-700' 
+              ? 'bg-red-50 border-red-500 text-blue-700' 
               : 'bg-green-50 border-green-500 text-green-700'
           }`}>
             <span>{alerta.tipo === 'error' ? '⚠️' : '✅'}</span>
@@ -196,20 +192,20 @@ function ForgotPassword() {
               </div>
             )}
 
-            {debugCode && (
+            {resetToken && (
               <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-700 border border-slate-200 break-words">
-                <p className="font-semibold">Código de recuperación (dev):</p>
+                <p className="font-semibold">Token de recuperación:</p>
                 <div className="flex flex-col gap-2">
-                  <p className="text-sm font-mono break-all">{debugCode}</p>
+                  <p className="text-sm font-mono break-all">{resetToken}</p>
                   <button
                     type="button"
                     onClick={() => {
-                      navigator.clipboard.writeText(debugCode);
-                      setAlerta({ mostrar: true, texto: 'Código copiado al portapapeles', tipo: 'success' });
+                      navigator.clipboard.writeText(resetToken);
+                      setAlerta({ mostrar: true, texto: 'Token copiado al portapapeles', tipo: 'success' });
                     }}
                     className="self-start px-3 py-2 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition"
                   >
-                    Copiar código
+                    Copiar token
                   </button>
                 </div>
               </div>

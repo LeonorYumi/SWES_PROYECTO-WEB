@@ -9,24 +9,42 @@ function ProductForm() {
   const [form, setForm] = useState({ name: '', description: '', price: '', category: '', image: '' });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [sessionExpiredModal, setSessionExpiredModal] = useState({ visible: false, message: '' });
+
+  const handleSessionExpired = (message = 'Sesión expirada. Por favor inicia sesión de nuevo.') => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('uid');
+    localStorage.removeItem('role');
+    localStorage.removeItem('email');
+    localStorage.removeItem('name');
+    setSessionExpiredModal({ visible: true, message });
+  };
 
   useEffect(() => {
-    if (id) {
-      (async () => {
-        try {
-          const item = await getById('products', id);
-          setForm({ 
-            name: item.name || item.title || '', 
-            description: item.description || '', 
-            price: item.price || '', 
-            category: item.category || '',
-            image: item.image || item.imagen || '' 
-          });
-        } catch (err) {
-          console.error(err);
+    if (!id) return;
+
+    const loadProduct = async () => {
+      try {
+        const item = await getById('products', id);
+        setForm({
+          name: item.name || item.title || '',
+          description: item.description || '',
+          price: item.price || '',
+          category: item.category || '',
+          image: item.image || item.imagen || '',
+        });
+      } catch (err) {
+        console.error(err);
+        if (err?.response?.status === 401) {
+          handleSessionExpired('Sesión expirada. Por favor inicia sesión nuevamente.');
+        } else {
+          setFormError('No se pudo cargar el producto. Intenta nuevamente.');
         }
-      })();
-    }
+      }
+    };
+
+    loadProduct();
   }, [id]);
 
   const validateField = (name, value) => {
@@ -73,7 +91,7 @@ function ProductForm() {
     };
     reader.onerror = (err) => {
       console.error('Error leyendo archivo:', err);
-      alert('Error al leer la imagen');
+      setErrors(prev => ({ ...prev, image: 'Error al leer la imagen. Intenta con otro archivo.' }));
     };
     reader.readAsDataURL(file);
   };
@@ -95,7 +113,8 @@ function ProductForm() {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        throw new Error('No hay token de autenticación. Por favor inicia sesión nuevamente.');
+        handleSessionExpired('Sesión expirada. Por favor inicia sesión nuevamente.');
+        return;
       }
 
       const sellerName = localStorage.getItem('name') || localStorage.getItem('email') || 'Vendedor';
@@ -125,13 +144,17 @@ function ProductForm() {
       }, 500);
     } catch (err) {
       console.error('Error guardando producto:', err);
-      const errorMessage =
-        err.response?.data?.detail ||
-        err.response?.data?.message ||
-        err.response?.data?.mensaje ||
-        err.message ||
-        'Error al guardar el producto';
-      alert(`Error: ${errorMessage}`);
+      if (err.response?.status === 401) {
+        handleSessionExpired('Sesión expirada. Por favor inicia sesión nuevamente.');
+      } else {
+        const errorMessage =
+          err.response?.data?.detail ||
+          err.response?.data?.message ||
+          err.response?.data?.mensaje ||
+          err.message ||
+          'Error al guardar el producto';
+        setFormError(errorMessage);
+      }
       setLoading(false);
     }
   };
@@ -153,6 +176,11 @@ function ProductForm() {
       </div>
       
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        {formError && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-medium">
+            {formError}
+          </div>
+        )}
         
         {/* Sección: Datos Generales Organizados en Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

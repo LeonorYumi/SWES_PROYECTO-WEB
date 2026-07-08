@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { loginUser, googleSignIn } from '../services/authService';
 import { supabase } from '../../supabaseClient';
 import imgLogin from '../assets/imagen_login.jpeg';
@@ -8,9 +8,21 @@ import { Mail, Lock , Eye, EyeOff} from 'lucide-react'; // iconos de correo y co
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
+  const [sessionAlertVisible, setSessionAlertVisible] = useState(false);
   const [verPassword, setVerPassword] = useState(false);
   const [mantenerSesion, setMantenerSesion] = useState(false);
+
+  useEffect(() => {
+    const sessionParam = new URLSearchParams(location.search).get('sessionExpired');
+    const sessionMessage = location.state?.message || (sessionParam === '1' ? 'Sesión expirada. Inicia sesión nuevamente.' : '');
+
+    if (sessionMessage) {
+      setMensaje({ texto: sessionMessage, tipo: 'error' });
+      setSessionAlertVisible(true);
+    }
+  }, [location.search, location.state]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -34,7 +46,11 @@ const Login = () => {
         localStorage.setItem('email', data.email || email);
         localStorage.setItem('name', data.name || '');
 
-        setMensaje({ texto: '¡Bienvenido!', tipo: 'success' });
+        const mensajeBienvenida = data.sessionMessage
+          ? `${data.message} ${data.sessionMessage}`
+          : data.message;
+
+        setMensaje({ texto: mensajeBienvenida || '¡Bienvenido!', tipo: 'success' });
         setTimeout(() => navigate('/dashboard'), 800);
       } else {
         setMensaje({ texto: data?.message || 'Error en la respuesta del servidor.', tipo: 'error' });
@@ -73,7 +89,7 @@ const Login = () => {
             localStorage.setItem('role', (googleData.role || 'visitante').toLowerCase());
             localStorage.setItem('email', googleData.email || '');
             localStorage.setItem('name', googleData.name || '');
-            setMensaje({ texto: 'Inicio de sesión con Google exitoso.', tipo: 'success' });
+            setMensaje({ texto: googleData.message || 'Bienvenido', tipo: 'success' });
             setTimeout(() => navigate('/dashboard'), 800);
           }
         } catch (err) {
@@ -183,6 +199,25 @@ const Login = () => {
       <div className="hidden md:block w-1/2 relative bg-brand-panel">
         <img src={imgLogin} alt="SWES" className="absolute inset-0 w-full h-full object-cover" />
       </div>
+
+      {sessionAlertVisible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+          <div className="w-full max-w-md rounded-3xl border border-blue-200 bg-white p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-black-700">Sesión expirada</h2>
+            <p className="mt-3 text-sm text-gray-600">Tu sesión ha caducado. Debes iniciar sesión nuevamente para continuar.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setSessionAlertVisible(false);
+                navigate('/login', { replace: true, state: {} });
+              }}
+              className="mt-6 w-full rounded-xl bg-red-600 py-3 text-sm font-semibold text-white transition hover:bg-red-700"
+            >
+              Aceptar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

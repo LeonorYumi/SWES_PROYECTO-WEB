@@ -1,4 +1,5 @@
 const { supabaseService, supabaseAnon, supabaseAdmin } = require("../supabase");
+const { findActiveSessionByToken } = require("../utils/sessionHelpers");
 
 const ADMIN_EMAILS = [
   "leonor.yumi@epn.edu.ec",
@@ -48,6 +49,12 @@ const verifyToken = async (req, res, next) => {
     if (!user) {
       console.error('❌ Token inválido o expirado');
       return res.status(401).json({ message: "Token inválido o expirado" });
+    }
+
+    const activeSession = await findActiveSessionByToken(token);
+    if (!activeSession || !activeSession.active) {
+      console.warn('Sesión no activa o invalidada para token');
+      return res.status(401).json({ message: "Sesión inválida o caducada" });
     }
 
     console.log('   ✅ Usuario autenticado:', user.email);

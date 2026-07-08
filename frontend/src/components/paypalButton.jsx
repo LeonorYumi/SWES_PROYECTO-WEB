@@ -18,10 +18,10 @@ export default function PaypalButton({ items, userId, onSuccess, onError }) {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-md mx-auto rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">
       <PayPalScriptProvider options={initialOptions}>
         <PayPalButtons
-          style={{ layout: 'vertical', color: 'blue', shape: 'rect' }}
+          style={{ layout: 'vertical', color: 'blue', shape: 'pill', label: 'pay', height: 45, tagline: false }}
           createOrder={createOrder}
           onApprove={onApprove}
           onError={(err) => {

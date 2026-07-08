@@ -12,6 +12,7 @@ const {
   createOrUpdateUserProfile,
   getUserProfile,
 } = require("../utils/authHelpers");
+const { createOrReplaceActiveSession } = require("../utils/sessionHelpers");
 
 const FRONTEND_VERIFY_URL = process.env.FRONTEND_VERIFY_URL || "http://localhost:5173/verify";
 const FRONTEND_RESET_URL = process.env.FRONTEND_RESET_URL || "http://localhost:5173/reset-password";
@@ -92,6 +93,27 @@ const login = async (req, res) => {
     }
 
     const userId = data.user?.id;
+    let sessionMessage = null;
+    if (userId && data.session?.access_token) {
+      try {
+        const deviceInfo = req.headers["user-agent"] || "desconocido";
+        const { data: sessionData, error: sessionError, previousSessions } = await createOrReplaceActiveSession(
+          userId,
+          data.session.access_token,
+          deviceInfo
+        );
+        if (sessionError) {
+          console.warn("No se pudo crear sesión única:", sessionError.message || sessionError);
+          sessionMessage = "Inicio de sesión exitoso, pero no se pudo registrar la sesión única.";
+        } else if (previousSessions && previousSessions.length > 0) {
+          sessionMessage = "Se ha cerrado la sesión anterior para este usuario.";
+        }
+      } catch (sessionErr) {
+        console.warn("Error registrando sesión única:", sessionErr.message || sessionErr);
+        sessionMessage = "Inicio de sesión exitoso, pero no se pudo completar la verificación de sesión única.";
+      }
+    }
+
     let role = getRoleByEmail(normalEmail);
     let phone = "";
     let nombre = data.user?.user_metadata?.nombre || "";
@@ -116,13 +138,14 @@ const login = async (req, res) => {
     }
 
     res.json({
-      message: "Login exitoso",
+      message: "Bienvenido",
       token: data.session?.access_token,
       uid: data.user?.id,
       email: data.user?.email,
       role,
       phone,
       name: nombre,
+      sessionMessage,
     });
   } catch (err) {
     console.error("Error en login:", err);
@@ -155,7 +178,7 @@ const forgotPassword = async (req, res) => {
     if (findErr) console.warn('forgotPassword: findAuthUserByEmail error', findErr);
 
     let previewUrl;
-    let debugCode = null;
+    let resetToken = null;
 
     if (user?.id) {
       // Ensure profile exists and capture profile id if created or preexisting
@@ -168,23 +191,23 @@ const forgotPassword = async (req, res) => {
         console.warn('forgotPassword: createOrUpdateUserProfile threw', pErr);
       }
 
-      const code = generateRecoveryCode();
+      const token = generateRecoveryCode();
+      resetToken = token;
 
       // Try insert with auth user id first. If it fails due to FK, try with profile id.
-      let insertResult = await createPasswordResetRecord(user.id, normalEmail, code);
+      let insertResult = await createPasswordResetRecord(user.id, normalEmail, token);
       if (insertResult?.error) {
         console.warn('forgotPassword: insert with auth id failed', insertResult.error?.message || insertResult.error);
         if (profile && profile.id) {
-          insertResult = await createPasswordResetRecord(profile.id, normalEmail, code);
+          insertResult = await createPasswordResetRecord(profile.id, normalEmail, token);
         }
       }
 
       if (insertResult && !insertResult.error) {
-        debugCode = code;
         console.log('Password reset record created', insertResult.data || '(no-data)');
-        const emailBody = `<p>Código de verificación:</p><h2 style="font-size:24px;letter-spacing:2px;">${code}</h2><p>Ingresa este código para restablecer tu contraseña.</p>`;
+        const emailBody = `<p>Token de recuperación:</p><h2 style="font-size:24px;letter-spacing:2px;">${token}</h2><p>Usa este token para restablecer tu contraseña en el formulario.</p>`;
         try {
-          const result = await sendEmail({ to: normalEmail, subject: 'Código de verificación', html: emailBody });
+          const result = await sendEmail({ to: normalEmail, subject: 'Token de recuperación', html: emailBody });
           previewUrl = result?.previewUrl;
         } catch (sendErr) {
           console.error('Error enviando correo:', sendErr);
@@ -194,14 +217,11 @@ const forgotPassword = async (req, res) => {
       }
     }
 
-    const debugToken = process.env.ENABLE_DEV_EMAILS === 'true' ? debugCode : undefined;
-
     res.json({
-      message: 'Si el correo existe, se ha enviado un código a tu correo',
-      method: 'code',
+      message: 'Si el correo existe, se ha enviado un token de recuperación a tu correo',
+      method: 'token',
       previewUrl,
-      debugCode: debugToken,
-      debugToken,
+      resetToken,
     });
   } catch (err) {
     console.error('Error en forgotPassword:', err);
@@ -307,6 +327,7 @@ const googleSignIn = async (req, res) => {
     const user = userData.user;
     const normalEmail = normalizeEmail(user.email);
     let role = getRoleByEmail(normalEmail);
+    let sessionMessage = null;
 
     const { data: profile } = await supabaseAdmin.from("users").select("*").eq("id", user.id).single();
     if (!profile) {
@@ -324,7 +345,32 @@ const googleSignIn = async (req, res) => {
       role = getRoleByEmail(normalEmail) === "administrador" ? "administrador" : profile.role || role;
     }
 
-    res.json({ message: "Google login exitoso", uid: user.id, email: normalEmail, role, name: user.user_metadata?.full_name || "" });
+    try {
+      const deviceInfo = req.headers["user-agent"] || "desconocido";
+      const { data: sessionData, error: sessionError, previousSessions } = await createOrReplaceActiveSession(
+        user.id,
+        accessToken,
+        deviceInfo
+      );
+      if (sessionError) {
+        console.warn("googleSignIn: no se pudo crear sesión única:", sessionError.message || sessionError);
+        sessionMessage = "Sesión iniciada, pero no se pudo registrar la sesión única.";
+      } else if (previousSessions && previousSessions.length > 0) {
+        sessionMessage = "Se ha cerrado la sesión anterior para este usuario.";
+      }
+    } catch (sessionErr) {
+      console.warn("googleSignIn: error registrando sesión única:", sessionErr.message || sessionErr);
+      sessionMessage = "Sesión iniciada, pero no se pudo completar la verificación de sesión única.";
+    }
+
+    res.json({
+      message: "Bienvenido",
+      uid: user.id,
+      email: normalEmail,
+      role,
+      name: user.user_metadata?.full_name || "",
+      sessionMessage,
+    });
   } catch (err) {
     console.error("Error en googleSignIn:", err);
     res.status(500).json({ message: "Error en Google Sign-In" });

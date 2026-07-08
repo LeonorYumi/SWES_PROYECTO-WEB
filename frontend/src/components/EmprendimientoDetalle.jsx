@@ -1,7 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { FaArrowLeft, FaRobot, FaComments, FaWhatsapp } from 'react-icons/fa';
+import { FaArrowLeft, FaWhatsapp } from 'react-icons/fa';
 import { getAll } from '../services/crudService';
+import ChatRoom from './ChatRoom';
 import PaypalButton from './paypalButton';
 
 function EmprendimientoDetalle() {
@@ -69,11 +70,11 @@ function EmprendimientoDetalle() {
           Volver al tablero
         </button>
 
-        {/* Layout de 2 columnas: producto + espacio para chat IA */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Layout de 2 columnas: producto + espacio para chat */}
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8 items-start">
 
           {/* COLUMNA PRINCIPAL: info del producto */}
-          <div className="lg:col-span-2 bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">
+          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">
 
             {/* Imagen contenida, no pegada a los bordes */}
             <div className="relative w-full aspect-[16/9] max-h-[380px] rounded-xl overflow-hidden bg-gray-50 mb-6">
@@ -136,7 +137,7 @@ function EmprendimientoDetalle() {
             </div>
 
             {/* Bloque de pago con PayPal */}
-            <div className="border border-gray-100 rounded-xl p-4 bg-gray-50/50">
+            <div className="border border-gray-100 rounded-xl p-5 bg-gray-50/50 shadow-sm">
               {pagoExitoso ? (
                 <div className="text-center py-4">
                   <p className="text-green-600 font-semibold text-sm mb-1">
@@ -179,37 +180,13 @@ function EmprendimientoDetalle() {
             </div>
           </div>
 
-          {/* COLUMNA LATERAL: placeholder del chat IA en vivo */}
-          <div className="lg:col-span-1 bg-white border border-gray-100 rounded-2xl shadow-sm flex flex-col overflow-hidden min-h-[420px] lg:min-h-[560px] lg:sticky lg:top-6">
-            <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
-              <div className="h-9 w-9 rounded-full bg-blue-900 text-white flex items-center justify-center shrink-0">
-                <FaRobot className="text-sm" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-gray-900">Asistente IA</p>
-                <p className="text-[11px] text-gray-400">Próximamente en vivo</p>
-              </div>
-            </div>
-
-            <div className="flex-1 flex flex-col items-center justify-center px-8 text-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
-                <FaComments className="text-blue-900 text-lg" />
-              </div>
-              <p className="text-xs text-gray-400 leading-relaxed max-w-[220px]">
-                Aquí se mostrará el chat en vivo con IA sobre este emprendimiento.
-              </p>
-              <p className="text-[10px] text-gray-300 font-medium uppercase tracking-wide">
-                Conexión websocket pendiente
-              </p>
-            </div>
-
-            <div className="p-4 border-t border-gray-100">
-              <input
-                disabled
-                placeholder="Escribe tu pregunta..."
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-            </div>
+          {/* COLUMNA LATERAL: chat en vivo con el emprendedor */}
+          <div className="lg:col-span-1 bg-white border border-gray-100 rounded-2xl shadow-sm flex flex-col overflow-hidden min-h-[520px] lg:min-h-[620px] lg:sticky lg:top-6 h-full">
+            <ChatRoom
+              roomId={item.id}
+              sellerName={item.sellerName || item.sellername || 'Emprendedor'}
+              ownerId={item.user_id}
+            />
           </div>
 
         </div>
