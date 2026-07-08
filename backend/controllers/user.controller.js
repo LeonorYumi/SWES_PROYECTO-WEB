@@ -98,15 +98,35 @@ const updateUser = async (req, res) => {
     }
 
     const targetId = existing.id || id;
-    const { data, error } = await supabaseAdmin
-      .from("users")
-      .update(updatePayload)
-      .eq("id", targetId)
-      .select()
-      .single();
+    const performUpdate = async (payload) => {
+      return await supabaseAdmin
+        .from("users")
+        .update(payload)
+        .eq("id", targetId)
+        .select()
+        .single();
+    };
 
-    if (error) throw error;
-    res.json(data);
+    let updateResult = await performUpdate(updatePayload);
+
+    if (updateResult.error) {
+      const err = updateResult.error;
+      const invalidColumnMatch = (err.message || '').match(/column "([^"]+)" does not exist/i);
+      if (invalidColumnMatch) {
+        const invalidColumn = invalidColumnMatch[1];
+        console.warn(`Campo no válido en users table: ${invalidColumn}. Se omitirá y se reintentará.`);
+        delete updatePayload[invalidColumn];
+
+        if (Object.keys(updatePayload).length === 0) {
+          return res.status(200).json({ mensaje: `Perfil actualizado parcialmente. El campo "+invalidColumn+" no está disponible en la tabla.` });
+        }
+
+        updateResult = await performUpdate(updatePayload);
+      }
+    }
+
+    if (updateResult.error) throw updateResult.error;
+    res.json(updateResult.data);
   } catch (err) {
     console.error("Error al actualizar usuario:", err);
     const detail = err?.message || err?.msg || JSON.stringify(err);
