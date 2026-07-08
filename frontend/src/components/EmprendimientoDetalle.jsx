@@ -1,9 +1,14 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { FaArrowLeft, FaWhatsapp } from 'react-icons/fa';
-import { getAll } from '../services/crudService';
+import { getById } from '../services/crudService';
 import ChatRoom from './ChatRoom';
+
 import { useCart } from '../context/CartContext';
+
+import PaypalButton from './paypalButton';
+import ProductGalleryCarousel from './ProductGalleryCarousel';
+
 
 function EmprendimientoDetalle() {
   const { id } = useParams();
@@ -16,9 +21,8 @@ function EmprendimientoDetalle() {
     const cargar = async () => {
       setLoading(true);
       try {
-        const data = await getAll('products');
-        const encontrado = data.find((p) => p.id === id);
-        setItem(encontrado || null);
+        const data = await getById('products', id);
+        setItem(data || null);
       } catch (error) {
         console.error('Error al cargar el emprendimiento:', error);
       } finally {
@@ -73,23 +77,11 @@ function EmprendimientoDetalle() {
           {/* COLUMNA PRINCIPAL: info del producto */}
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">
 
-            {/* Imagen contenida, no pegada a los bordes */}
-            <div className="relative w-full aspect-[16/9] max-h-[380px] rounded-xl overflow-hidden bg-gray-50 mb-6">
-              {item.image ? (
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-300 text-5xl bg-gray-50">
-                  🖼️
-                </div>
-              )}
-              <span className="absolute top-3 left-3 px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-white/95 text-blue-950 shadow-sm">
-                {item.category || 'General'}
-              </span>
-            </div>
+            {/* Carrusel de galería de imágenes */}
+            <ProductGalleryCarousel productId={item.id} fallbackImage={item.image || ''} />
+            <span className="mt-4 inline-flex rounded-full bg-white/95 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-950 shadow-sm">
+              {item.category || 'General'}
+            </span>
 
             {/* Título y precio */}
             <div className="flex items-start justify-between gap-4 mb-3">

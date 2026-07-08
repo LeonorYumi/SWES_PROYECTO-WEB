@@ -94,6 +94,18 @@ export const updateResource = async (resource, id, data) => {
   return res.data;
 };
 
+export const createProductImages = async (productId, images) => {
+  console.log(`🖼️ POST /products/${productId}/images`, images);
+  const res = await apiClient.post(`/products/${productId}/images`, { images });
+  return res.data;
+};
+
+export const getProductImages = async (productId) => {
+  console.log(`📥 GET /products/${productId}/images`);
+  const res = await apiClient.get(`/products/${productId}/images`);
+  return res.data;
+};
+
 export const deleteResource = async (resource, id) => {
   console.log(`🗑️ DELETE /${resource}/${id}`);
   const res = await apiClient.delete(`/${resource}/${id}`);
@@ -105,6 +117,7 @@ export default {
   getById, 
   getByUserId, 
   createResource, 
+  createProductImages, 
   updateResource, 
   deleteResource 
 };

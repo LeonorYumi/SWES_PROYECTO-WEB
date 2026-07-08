@@ -7,6 +7,8 @@ const ADMIN_EMAILS = [
   "concepcion.arequipa@epn.edu.ec",
 ].map((email) => email.toLowerCase());
 
+const normalizeRole = (role) => (role ? String(role).toLowerCase().trim() : "");
+
 const getRoleByEmail = (email) => {
   if (!email) return "visitante";
   const normalized = email.toLowerCase().trim();
@@ -67,7 +69,7 @@ const verifyToken = async (req, res, next) => {
 
     let role = "visitante";
     if (profile) {
-      role = profile.role || role;
+      role = normalizeRole(profile.role) || role;
       if (getRoleByEmail(user.email?.toLowerCase().trim()) === "administrador") {
         role = "administrador";
       }
@@ -97,7 +99,7 @@ const verifyToken = async (req, res, next) => {
     req.user = {
       uid: user.id,
       email: user.email,
-      role,
+      role: normalizeRole(role),
     };
 
     if (profileError && profileError.code !== "PGRST116") {
@@ -113,12 +115,15 @@ const verifyToken = async (req, res, next) => {
 };
 
 const authorizeRoles = (...roles) => {
+  const normalizedExpectedRoles = roles.map(normalizeRole);
+
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ message: "No autenticado" });
     }
 
-    if (!roles.includes(req.user.role)) {
+    const userRole = normalizeRole(req.user.role);
+    if (!normalizedExpectedRoles.includes(userRole)) {
       return res.status(403).json({
         message: `Acceso denegado. Se requiere rol: ${roles.join(" o ")}. Tu rol: ${req.user.role}`,
       });
@@ -128,21 +133,48 @@ const authorizeRoles = (...roles) => {
   };
 };
 
-const authorizeSelfOrAdmin = (req, res, next) => {
+const authorizeSelfOrAdmin = async (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ message: "No autenticado" });
   }
 
-  const isAdmin = req.user.role === "administrador";
+  const isAdmin = normalizeRole(req.user.role) === "administrador";
   const isSelf = req.user.uid === req.params.id;
 
-  if (!isAdmin && !isSelf) {
-    return res.status(403).json({
-      message: "Acceso denegado. Solo puedes acceder a tu propio recurso.",
-    });
+  if (isAdmin) {
+    return next();
   }
 
-  next();
+  if (isSelf) {
+    return next();
+  }
+
+  // Si el ID del perfil no coincide con el UID de auth, validar por email
+  try {
+    const { data: targetProfile, error: profileError } = await supabaseAdmin
+      .from("users")
+      .select("email")
+      .eq("id", req.params.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error("Error verificando ownership en authorizeSelfOrAdmin:", profileError);
+      return res.status(500).json({ message: "Error interno verificando permisos" });
+    }
+
+    const normalizedProfileEmail = targetProfile?.email?.toLowerCase().trim();
+    const normalizedTokenEmail = req.user.email?.toLowerCase().trim();
+    if (normalizedProfileEmail && normalizedTokenEmail && normalizedProfileEmail === normalizedTokenEmail) {
+      return next();
+    }
+  } catch (err) {
+    console.error("Error en authorizeSelfOrAdmin:", err);
+    return res.status(500).json({ message: "Error interno verificando permisos" });
+  }
+
+  return res.status(403).json({
+    message: "Acceso denegado. Solo puedes acceder a tu propio recurso.",
+  });
 };
 
 module.exports = { verifyToken, authorizeRoles, authorizeSelfOrAdmin };

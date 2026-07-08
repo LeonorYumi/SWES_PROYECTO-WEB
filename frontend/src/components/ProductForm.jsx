@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { createResource, getById, updateResource } from '../services/crudService';
+import { createProductImages, createResource, getById, updateResource } from '../services/crudService';
+import ProductImagesUploader from './ProductImagesUploader';
 
 function ProductForm() {
   const { id } = useParams();
@@ -10,6 +11,7 @@ function ProductForm() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
+  const [uploadMessage, setUploadMessage] = useState('');
   const [sessionExpiredModal, setSessionExpiredModal] = useState({ visible: false, message: '' });
 
   const handleSessionExpired = (message = 'Sesión expirada. Por favor inicia sesión de nuevo.') => {
@@ -96,6 +98,17 @@ function ProductForm() {
     reader.readAsDataURL(file);
   };
 
+  const handleGalleryUploadComplete = async (uploadedImages) => {
+    if (!id || !uploadedImages?.length) return;
+    try {
+      await createProductImages(id, uploadedImages);
+      setUploadMessage('Imágenes guardadas en la galería del producto.');
+    } catch (err) {
+      console.error('Error al guardar la galería de imágenes:', err);
+      setUploadMessage(err?.message || 'No se pudieron guardar las imágenes en la tabla.');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -134,14 +147,15 @@ function ProductForm() {
 
       if (id) {
         await updateResource('products', id, payload);
-      } else {
-        await createResource('products', payload);
-      }
-      
-      // Redirigir con un delay para asegurar que se guardó
-      setTimeout(() => {
         navigate('/admin/products', { replace: false });
-      }, 500);
+      } else {
+        const created = await createResource('products', payload);
+        if (created?.id) {
+          navigate(`/admin/products/edit/${created.id}`, { replace: false });
+        } else {
+          navigate('/admin/products', { replace: false });
+        }
+      }
     } catch (err) {
       console.error('Error guardando producto:', err);
       if (err.response?.status === 401) {
@@ -316,7 +330,16 @@ function ProductForm() {
             </span>
           )}
         </div>
-        
+
+        {id && (
+          <div className="p-6 border border-gray-100 bg-white rounded-xl shadow-sm">
+            <ProductImagesUploader productId={id} onUploadComplete={handleGalleryUploadComplete} />
+            {uploadMessage && (
+              <p className="mt-3 text-sm text-blue-900">{uploadMessage}</p>
+            )}
+          </div>
+        )}
+
         {/* Vista previa Refinada */}
         {form.image && (
           <div className="flex items-center gap-4 p-4 border border-gray-100 rounded-xl bg-white shadow-3xs">

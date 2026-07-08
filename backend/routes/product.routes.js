@@ -85,6 +85,78 @@ router.get("/products/user/:userId", verifyToken, async (req, res) => {
   }
 });
 
+const ensureProductOwnerOrAdmin = async (productId, reqUser) => {
+  const { data: existing, error: fetchError } = await supabaseAdmin.from("products").select("user_id").eq("id", productId).single();
+  if (fetchError || !existing) return false;
+  if (reqUser.role === "administrador") return true;
+  if (existing.user_id === reqUser.uid) return true;
+
+  const tokenEmail = (reqUser.email || "").toLowerCase().trim();
+  if (!tokenEmail) return false;
+
+  const { data: profileRef } = await supabaseAdmin.from('users').select('email').eq('id', existing.user_id).maybeSingle();
+  if (profileRef?.email?.toLowerCase().trim() === tokenEmail) {
+    return true;
+  }
+
+  const { data: profileByEmail } = await supabaseAdmin.from('users').select('id,email').eq('email', tokenEmail).maybeSingle();
+  return profileByEmail?.id === existing.user_id;
+};
+
+router.get('/products/:id/images', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabaseAdmin
+      .from('product_images')
+      .select('id,product_id,image_url,created_at')
+      .eq('product_id', id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error cargando imágenes de producto:', error);
+      return res.status(500).json({ message: 'Error al cargar imágenes de producto' });
+    }
+
+    res.json(data || []);
+  } catch (error) {
+    console.error('Error cargando imágenes de producto:', error);
+    res.status(500).json({ message: 'Error al cargar imágenes de producto' });
+  }
+});
+
+router.post('/products/:id/images', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { images } = req.body;
+
+    if (!Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ message: 'Se requieren imágenes para guardar la galería.' });
+    }
+
+    const allowed = await ensureProductOwnerOrAdmin(id, req.user);
+    if (!allowed) {
+      return res.status(403).json({ message: 'No tienes permiso para agregar imágenes a este producto' });
+    }
+
+    const rows = images.map((image) => ({
+      product_id: id,
+      image_url: image.image_url || image.url,
+      created_at: new Date().toISOString(),
+    }));
+
+    const { data, error } = await supabaseAdmin.from('product_images').insert(rows).select();
+    if (error) {
+      console.error('Error guardando imágenes de producto:', error);
+      return res.status(500).json({ message: 'Error al guardar imágenes de producto' });
+    }
+
+    res.status(201).json(data);
+  } catch (error) {
+    console.error('Error guardando imágenes de producto:', error);
+    res.status(500).json({ message: 'Error al guardar imágenes de producto' });
+  }
+});
+
 router.get("/products/:id", async (req, res) => {
   try {
     const { id } = req.params;

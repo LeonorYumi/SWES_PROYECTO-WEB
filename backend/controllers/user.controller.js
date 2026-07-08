@@ -15,7 +15,24 @@ const getAllUsers = async (req, res) => {
 const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { data, error } = await supabaseAdmin.from("users").select("*").eq("id", id).single();
+    let { data, error } = await supabaseAdmin.from("users").select("*").eq("id", id).single();
+
+    if ((!data || error) && req.user?.email) {
+      const normalizedEmail = req.user.email.toLowerCase().trim();
+      const { data: profileByEmail, error: emailError } = await supabaseAdmin
+        .from("users")
+        .select("*")
+        .eq("email", normalizedEmail)
+        .single();
+      if (emailError && emailError.code !== "PGRST116") {
+        console.error("Error buscando usuario por email en getUserById:", emailError);
+      }
+      if (profileByEmail) {
+        data = profileByEmail;
+        error = null;
+      }
+    }
+
     if (error || !data) return res.status(404).json({ mensaje: "Usuario no encontrado" });
     res.json(data);
   } catch (err) {
@@ -31,13 +48,60 @@ const updateUser = async (req, res) => {
       return res.status(400).json({ mensaje: "No hay datos para actualizar" });
     }
 
-    const { data: existing } = await supabaseAdmin.from("users").select("id").eq("id", id).single();
+    let { data: existing, error: existingError } = await supabaseAdmin.from("users").select("id,email").eq("id", id).single();
+    if (existingError && existingError.code !== "PGRST116") {
+      console.error("Error buscando usuario antes de actualizar:", existingError);
+      return res.status(500).json({ mensaje: "Error al buscar el usuario", detail: existingError.message || existingError });
+    }
+
+    if (!existing && req.user?.email) {
+      const normalizedEmail = req.user.email.toLowerCase().trim();
+      const { data: profileByEmail, error: emailError } = await supabaseAdmin
+        .from("users")
+        .select("id,email")
+        .eq("email", normalizedEmail)
+        .single();
+      if (emailError && emailError.code !== "PGRST116") {
+        console.error("Error buscando usuario por email antes de actualizar:", emailError);
+      }
+      existing = profileByEmail || null;
+    }
+
     if (!existing) return res.status(404).json({ mensaje: "Usuario no encontrado" });
 
+    const allowedFields = ["nombre", "role", "phone", "email", "avatar_url"];
+    const updatePayload = Object.entries(req.body).reduce((acc, [key, value]) => {
+      if (!allowedFields.includes(key)) return acc;
+      if (value === null || value === undefined) return acc;
+      if (key === "phone") {
+        // No enviar teléfono vacío al actualizar. Si el rol no es emprendedor, omitimos el campo.
+        if (!String(value).trim()) return acc;
+        acc[key] = String(value).trim();
+        return acc;
+      }
+      if (key === "role") {
+        const normalizedRole = String(value).toLowerCase().trim();
+        if (!normalizedRole) return acc;
+        acc[key] = normalizedRole;
+        return acc;
+      }
+      if (typeof value === "string") {
+        acc[key] = value.trim();
+        return acc;
+      }
+      acc[key] = value;
+      return acc;
+    }, {});
+
+    if (Object.keys(updatePayload).length === 0) {
+      return res.status(400).json({ mensaje: "No hay campos válidos para actualizar" });
+    }
+
+    const targetId = existing.id || id;
     const { data, error } = await supabaseAdmin
       .from("users")
-      .update({ ...req.body, updated_at: new Date().toISOString() })
-      .eq("id", id)
+      .update(updatePayload)
+      .eq("id", targetId)
       .select()
       .single();
 
@@ -45,7 +109,8 @@ const updateUser = async (req, res) => {
     res.json(data);
   } catch (err) {
     console.error("Error al actualizar usuario:", err);
-    res.status(500).json({ mensaje: "Error al actualizar usuario" });
+    const detail = err?.message || err?.msg || JSON.stringify(err);
+    res.status(500).json({ mensaje: "Error al actualizar usuario", detail });
   }
 };
 

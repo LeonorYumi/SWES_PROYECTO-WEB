@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FiUser, FiMail, FiShield, FiAward } from 'react-icons/fi';
+import ProfileEditor from './ProfileEditor';
 
 function Profile() {
   const [username, setUsername] = useState('Usuario');
@@ -82,6 +83,7 @@ function Profile() {
 
         </div>
       </div>
+      <ProfileEditor />
     </div>
   );
 }

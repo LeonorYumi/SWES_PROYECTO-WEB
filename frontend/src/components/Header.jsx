@@ -16,6 +16,9 @@ function Navbar() {
       ? localStorage.getItem('name') || localStorage.getItem('displayName') || localStorage.getItem('email') || 'Usuario'
       : 'Usuario'
   );
+  const [avatarUrl, setAvatarUrl] = useState(
+    typeof window !== 'undefined' ? localStorage.getItem('avatar_url') || '' : ''
+  );
   const role = typeof window !== 'undefined' ? (localStorage.getItem('role') || 'visitante').toLowerCase() : 'visitante';
 
   const handleLogout = () => {
@@ -29,6 +32,7 @@ function Navbar() {
   };
   useEffect(() => {
     setUsername(localStorage.getItem('name') || localStorage.getItem('email') || 'Usuario');
+    setAvatarUrl(localStorage.getItem('avatar_url') || '');
   }, []);
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -112,11 +116,14 @@ function Navbar() {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="w-9 h-9 rounded-full bg-blue-950 text-white font-bold text-sm hover:bg-blue-900 transition-colors border border-gray-100 flex items-center justify-center shadow-xs"
+              className="w-9 h-9 rounded-full overflow-hidden bg-blue-950 text-white font-bold text-sm hover:bg-blue-900 transition-colors border border-gray-100 flex items-center justify-center shadow-xs"
             >
-              {username.charAt(0).toUpperCase()}
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+              ) : (
+                <span>{username.charAt(0).toUpperCase()}</span>
+              )}
             </button>
-
             {dropdownOpen && (
               <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden transform origin-top-right transition-all">
 
