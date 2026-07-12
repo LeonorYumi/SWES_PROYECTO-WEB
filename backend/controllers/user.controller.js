@@ -48,7 +48,7 @@ const updateUser = async (req, res) => {
       return res.status(400).json({ mensaje: "No hay datos para actualizar" });
     }
 
-    let { data: existing, error: existingError } = await supabaseAdmin.from("users").select("id,email").eq("id", id).single();
+    let { data: existing, error: existingError } = await supabaseAdmin.from("users").select("*").eq("id", id).single();
     if (existingError && existingError.code !== "PGRST116") {
       console.error("Error buscando usuario antes de actualizar:", existingError);
       return res.status(500).json({ mensaje: "Error al buscar el usuario", detail: existingError.message || existingError });
@@ -58,7 +58,7 @@ const updateUser = async (req, res) => {
       const normalizedEmail = req.user.email.toLowerCase().trim();
       const { data: profileByEmail, error: emailError } = await supabaseAdmin
         .from("users")
-        .select("id,email")
+        .select("*")
         .eq("email", normalizedEmail)
         .single();
       if (emailError && emailError.code !== "PGRST116") {
@@ -69,27 +69,31 @@ const updateUser = async (req, res) => {
 
     if (!existing) return res.status(404).json({ mensaje: "Usuario no encontrado" });
 
+    const supportsAvatarUrl = Object.prototype.hasOwnProperty.call(existing, "avatar_url");
     const allowedFields = ["nombre", "role", "phone", "email", "avatar_url"];
-    const updatePayload = Object.entries(req.body).reduce((acc, [key, value]) => {
-      if (!allowedFields.includes(key)) return acc;
-      if (value === null || value === undefined) return acc;
+    const sanitizeValue = (key, value) => {
+      if (value === null || value === undefined) return undefined;
       if (key === "phone") {
-        // No enviar teléfono vacío al actualizar. Si el rol no es emprendedor, omitimos el campo.
-        if (!String(value).trim()) return acc;
-        acc[key] = String(value).trim();
-        return acc;
+        const phoneValue = String(value).trim();
+        return phoneValue || undefined;
       }
       if (key === "role") {
         const normalizedRole = String(value).toLowerCase().trim();
-        if (!normalizedRole) return acc;
-        acc[key] = normalizedRole;
-        return acc;
+        return normalizedRole || undefined;
       }
       if (typeof value === "string") {
-        acc[key] = value.trim();
-        return acc;
+        const trimmed = value.trim();
+        return trimmed || undefined;
       }
-      acc[key] = value;
+      return value;
+    };
+
+    const updatePayload = Object.entries(req.body).reduce((acc, [key, value]) => {
+      if (!allowedFields.includes(key)) return acc;
+      if (key === "avatar_url" && !supportsAvatarUrl) return acc;
+      const sanitized = sanitizeValue(key, value);
+      if (sanitized === undefined) return acc;
+      acc[key] = sanitized;
       return acc;
     }, {});
 
@@ -107,20 +111,52 @@ const updateUser = async (req, res) => {
         .single();
     };
 
+    const parseInvalidColumns = (err, payload) => {
+      const invalidColumns = [];
+      const message = err?.message || "";
+
+      const regexes = [
+        /column \"([^\"]+)\" does not exist/gi,
+        /Could not find the '([^']+)' column of '([^']+)' in the schema cache/gi,
+      ];
+
+      regexes.forEach((regex) => {
+        let match;
+        while ((match = regex.exec(message)) !== null) {
+          const column = match[1];
+          if (column && Object.prototype.hasOwnProperty.call(payload, column)) {
+            invalidColumns.push(column);
+          }
+        }
+      });
+
+      return [...new Set(invalidColumns)];
+    };
+
     let updateResult = await performUpdate(updatePayload);
 
     if (updateResult.error) {
-      const err = updateResult.error;
-      const invalidColumnMatch = (err.message || '').match(/column "([^"]+)" does not exist/i);
-      if (invalidColumnMatch) {
-        const invalidColumn = invalidColumnMatch[1];
-        console.warn(`Campo no válido en users table: ${invalidColumn}. Se omitirá y se reintentará.`);
-        delete updatePayload[invalidColumn];
+      console.warn("Error al actualizar usuario en Supabase:", JSON.stringify(updateResult.error, null, 2));
+      console.warn("Payload enviado:", JSON.stringify(updatePayload, null, 2));
+
+      const invalidColumns = parseInvalidColumns(updateResult.error, updatePayload);
+      if (invalidColumns.length > 0) {
+        invalidColumns.forEach((column) => {
+          console.warn(`Campo no válido en users table: ${column}. Se omitirá y se reintentará.`);
+          delete updatePayload[column];
+        });
 
         if (Object.keys(updatePayload).length === 0) {
-          return res.status(200).json({ mensaje: `Perfil actualizado parcialmente. El campo "+invalidColumn+" no está disponible en la tabla.` });
+          return res.status(200).json({ mensaje: "Perfil actualizado parcialmente. Algunos campos no son compatibles con la tabla." });
         }
 
+        updateResult = await performUpdate(updatePayload);
+      } else if (updatePayload.avatar_url) {
+        console.warn("No se pudo detectar el campo inválido, eliminando avatar_url y reintentando.");
+        delete updatePayload.avatar_url;
+        if (Object.keys(updatePayload).length === 0) {
+          return res.status(200).json({ mensaje: "Perfil actualizado parcialmente. El avatar no se puede guardar porque la tabla no soporta ese campo." });
+        }
         updateResult = await performUpdate(updatePayload);
       }
     }

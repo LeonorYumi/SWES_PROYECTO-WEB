@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { FaArrowLeft, FaWhatsapp } from 'react-icons/fa';
 import { getById } from '../services/crudService';
@@ -13,9 +13,13 @@ import ProductGalleryCarousel from './ProductGalleryCarousel';
 function EmprendimientoDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const { addItem } = useCart();
+
+  // Si venimos con ?chatWith=..., lo pasamos al ChatRoom para abrir el hilo correcto
+  const chatWithParam = new URLSearchParams(location.search).get('chatWith') || null;
 
   useEffect(() => {
     const cargar = async () => {
@@ -150,6 +154,7 @@ function EmprendimientoDetalle() {
               roomId={item.id}
               sellerName={item.sellerName || item.sellername || 'Emprendedor'}
               ownerId={item.user_id}
+              initialThreadId={chatWithParam}
             />
           </div>
 

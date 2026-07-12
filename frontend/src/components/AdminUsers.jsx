@@ -12,6 +12,11 @@ export default function AdminUsers() {
   const [nuevoErrors, setNuevoErrors] = useState({ email: '', password: '', nombre: '', phone: '' });
   const [modalEliminar, setModalEliminar] = useState({ abierto: false, usuarioId: null });
 
+  // Búsqueda y paginación
+  const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+
   const mostrarToast = (texto, tipo = 'success') => {
     setToast({ mostrar: true, texto, tipo });
     setTimeout(() => setToast({ mostrar: false, texto: '', tipo: '' }), 3000);
@@ -161,6 +166,19 @@ export default function AdminUsers() {
 
   if (loading) return <div className="p-6">Cargando usuarios...</div>;
 
+  const normalizedSearch = (searchTerm || '').toLowerCase().trim();
+  const filtered = users.filter((u) => {
+    if (!normalizedSearch) return true;
+    return (
+      (u.email || '').toLowerCase().includes(normalizedSearch) ||
+      (u.nombre || '').toLowerCase().includes(normalizedSearch) ||
+      (u.role || '').toLowerCase().includes(normalizedSearch)
+    );
+  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+  const paged = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="max-w-6xl mx-auto p-6">
       {toast.mostrar && (
@@ -172,17 +190,34 @@ export default function AdminUsers() {
 
       <h2 className="text-2xl font-bold mb-4">Usuarios</h2>
 
-      <button
-        onClick={() => setCrearNuevo(true)}
-        className="mb-6 px-4 py-3 rounded-xl bg-brand-primary text-white text-sm font-semibold hover:bg-brand-hover transition flex items-center gap-2"
-      >
-        <Plus className="w-4 h-4" />
-        Crear nuevo usuario
-      </button>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <input
+            placeholder="Buscar por email, nombre o rol"
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+            className="w-full sm:w-80 rounded-xl border border-gray-200 px-4 py-2 text-sm"
+          />
+          <button
+            onClick={() => { setSearchTerm(''); setPage(1); }}
+            className="px-3 py-2 rounded-xl border bg-gray-50 text-sm"
+          >Limpiar</button>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setCrearNuevo(true)}
+            className="px-4 py-3 rounded-xl bg-brand-primary text-white text-sm font-semibold hover:bg-brand-hover transition flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Crear nuevo usuario
+          </button>
+        </div>
+      </div>
 
       {/* TARJETAS - Mobile y tablet */}
       <div className="md:hidden flex flex-col gap-3">
-        {users.map((u) => {
+        {paged.map((u) => {
           return (
             <div key={u.id} className="bg-white rounded-xl border shadow-sm p-4 flex flex-col gap-3">
               <p className="text-sm font-semibold text-gray-900 break-all">{u.email}</p>
@@ -234,7 +269,7 @@ export default function AdminUsers() {
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
+            {paged.map((u) => (
               <tr key={u.id} className="border-t hover:bg-gray-50 transition-colors">
                 <td className="p-3 text-sm">{u.email}</td>
                 <td className="p-3 text-sm">{u.nombre || '-'}</td>
@@ -258,6 +293,16 @@ export default function AdminUsers() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* PAGINACIÓN */}
+      <div className="mt-4 flex items-center justify-between">
+        <div className="text-sm text-gray-600">Mostrando {Math.min(filtered.length, (currentPage-1)*pageSize+1)} - {Math.min(filtered.length, currentPage*pageSize)} de {filtered.length} usuarios</div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setPage((p)=>Math.max(1,p-1))} className="px-3 py-1 rounded border">Anterior</button>
+          <div className="text-sm px-3">{currentPage} / {totalPages}</div>
+          <button onClick={() => setPage((p)=>Math.min(totalPages,p+1))} className="px-3 py-1 rounded border">Siguiente</button>
+        </div>
       </div>
 
       {crearNuevo && (

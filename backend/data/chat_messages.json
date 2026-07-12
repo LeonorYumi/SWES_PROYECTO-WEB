@@ -1,0 +1,44 @@
+{
+  "e027c80f-eecb-4ef2-a6aa-be133e595091": [
+    {
+      "id": "1783885837554-4i5rppkcecd",
+      "room_id": "e027c80f-eecb-4ef2-a6aa-be133e595091",
+      "sender_id": "f57fb4ac-6844-4294-ba58-04aa136e17f7",
+      "sender_name": "Camila Bueno",
+      "receiver_id": "01a0b3d8-1e27-4ff0-0123-012345678989",
+      "content": "hola",
+      "created_at": "2026-07-12T19:50:37.554Z",
+      "read": true
+    },
+    {
+      "id": "1783885850196-m7ta1czt7c",
+      "room_id": "e027c80f-eecb-4ef2-a6aa-be133e595091",
+      "sender_id": "01a0b3d8-1e27-4ff0-0123-012345678989",
+      "sender_name": "Juan Perez",
+      "receiver_id": "f57fb4ac-6844-4294-ba58-04aa136e17f7",
+      "content": "😃",
+      "created_at": "2026-07-12T19:50:50.196Z",
+      "read": true
+    },
+    {
+      "id": "1783889097991-qr389diunno",
+      "room_id": "e027c80f-eecb-4ef2-a6aa-be133e595091",
+      "sender_id": "9b9c46f1-4b70-4f83-bcdf-345678901212",
+      "sender_name": "Camila Bueno",
+      "receiver_id": "01a0b3d8-1e27-4ff0-0123-012345678989",
+      "content": "hola",
+      "created_at": "2026-07-12T20:44:57.991Z",
+      "read": true
+    },
+    {
+      "id": "1783889109544-lbkfi7x2xtm",
+      "room_id": "e027c80f-eecb-4ef2-a6aa-be133e595091",
+      "sender_id": "9b9c46f1-4b70-4f83-bcdf-345678901212",
+      "sender_name": "Camila Bueno",
+      "receiver_id": "01a0b3d8-1e27-4ff0-0123-012345678989",
+      "content": "tienes aun polifresas",
+      "created_at": "2026-07-12T20:45:09.544Z",
+      "read": true
+    }
+  ]
+}

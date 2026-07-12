@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { createProductImages, createResource, getById, updateResource } from '../services/crudService';
+import { createProductImages, createResource, getById, updateResource, getProductImages } from '../services/crudService';
 import ProductImagesUploader from './ProductImagesUploader';
 
 function ProductForm() {
@@ -11,6 +11,7 @@ function ProductForm() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
+  const [existingGalleryCount, setExistingGalleryCount] = useState(0);
   const [uploadMessage, setUploadMessage] = useState('');
   const [sessionExpiredModal, setSessionExpiredModal] = useState({ visible: false, message: '' });
 
@@ -47,6 +48,19 @@ function ProductForm() {
     };
 
     loadProduct();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    const fetchGallery = async () => {
+      try {
+        const imgs = await getProductImages(id);
+        setExistingGalleryCount(imgs?.length || 0);
+      } catch (err) {
+        console.error('Error al obtener imágenes existentes:', err);
+      }
+    };
+    fetchGallery();
   }, [id]);
 
   const validateField = (name, value) => {
@@ -98,10 +112,13 @@ function ProductForm() {
     reader.readAsDataURL(file);
   };
 
-  const handleGalleryUploadComplete = async (uploadedImages) => {
+  const handleGalleryUploadComplete = async (uploadedImages, primaryImageUrl) => {
     if (!id || !uploadedImages?.length) return;
     try {
-      await createProductImages(id, uploadedImages);
+      await createProductImages(id, uploadedImages, primaryImageUrl);
+      if (!form.image && primaryImageUrl) {
+        setForm((prev) => ({ ...prev, image: primaryImageUrl }));
+      }
       setUploadMessage('Imágenes guardadas en la galería del producto.');
     } catch (err) {
       console.error('Error al guardar la galería de imágenes:', err);
@@ -119,6 +136,12 @@ function ProductForm() {
 
     if (Object.keys(tempErrors).length > 0) {
       setErrors(tempErrors);
+      return;
+    }
+
+    // Validación: debe existir una imagen principal (o al menos imágenes en la galería)
+    if (!form.image && existingGalleryCount === 0) {
+      setErrors(prev => ({ ...prev, image: 'Debes subir al menos una imagen principal o en la galería.' }));
       return;
     }
 
@@ -151,7 +174,7 @@ function ProductForm() {
       } else {
         const created = await createResource('products', payload);
         if (created?.id) {
-          navigate(`/admin/products/edit/${created.id}`, { replace: false });
+          navigate(`/admin/products/edit/${created.id}`, { replace: true });
         } else {
           navigate('/admin/products', { replace: false });
         }
@@ -331,16 +354,13 @@ function ProductForm() {
           )}
         </div>
 
-        {id && (
-          <div className="p-6 border border-gray-100 bg-white rounded-xl shadow-sm">
-            <ProductImagesUploader productId={id} onUploadComplete={handleGalleryUploadComplete} />
-            {uploadMessage && (
-              <p className="mt-3 text-sm text-blue-900">{uploadMessage}</p>
-            )}
-          </div>
-        )}
+        <div className="p-6 border border-gray-100 bg-white rounded-xl shadow-sm mt-6">
+          <ProductImagesUploader productId={id} onUploadComplete={handleGalleryUploadComplete} />
+          {uploadMessage && (
+            <p className="mt-3 text-sm text-blue-900">{uploadMessage}</p>
+          )}
+        </div>
 
-        {/* Vista previa Refinada */}
         {form.image && (
           <div className="flex items-center gap-4 p-4 border border-gray-100 rounded-xl bg-white shadow-3xs">
             <img src={form.image} alt="preview" className="w-14 h-14 object-cover rounded-lg border border-gray-100 bg-gray-50 shrink-0" />

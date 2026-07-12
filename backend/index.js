@@ -25,6 +25,7 @@ const ADMIN_EMAILS = [
 ].map((email) => email.toLowerCase());
 
 const app = express();
+
 app.use(cors({
   origin: "*", 
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],

@@ -73,7 +73,7 @@ function ProductGalleryCarousel({ productId, fallbackImage }) {
 
   return (
     <div className="space-y-4">
-      <div className="relative w-full overflow-hidden rounded-3xl bg-gray-100 aspect-[16/9]">
+      <div className="relative w-full overflow-hidden rounded-3xl bg-gray-100" style={{ maxHeight: 520 }}>
         {loading ? (
           <div className="flex h-full items-center justify-center text-gray-500">Cargando imágenes...</div>
         ) : currentImage ? (
@@ -81,7 +81,8 @@ function ProductGalleryCarousel({ productId, fallbackImage }) {
             <img
               src={currentImage}
               alt={hasImages ? `Galería ${selected + 1}` : 'Imagen del producto'}
-              className="h-full w-full object-cover"
+              className="w-full h-full object-contain bg-white"
+              style={{ maxHeight: 520, margin: '0 auto' }}
             />
             {uniqueImages.length > 1 && (
               <>

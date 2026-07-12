@@ -86,7 +86,6 @@ function ProfileEditor() {
         nombre: name,
         phone,
         avatar_url: newAvatarUrl,
-        updated_at: new Date().toISOString(),
       };
 
       await updateProfile(userId, updates);
@@ -106,7 +105,13 @@ function ProfileEditor() {
       setStatus({ message: 'Perfil actualizado correctamente.', type: 'success' });
     } catch (error) {
       console.error('Error guardando perfil:', error);
-      setStatus({ message: error?.message || 'No se pudo actualizar el perfil.', type: 'error' });
+      const message =
+        error?.response?.data?.detail ||
+        error?.response?.data?.mensaje ||
+        error?.response?.data?.message ||
+        error?.message ||
+        'No se pudo actualizar el perfil.';
+      setStatus({ message, type: 'error' });
     } finally {
       setLoading(false);
     }

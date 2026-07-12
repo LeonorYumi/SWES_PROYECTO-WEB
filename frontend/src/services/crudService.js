@@ -94,9 +94,9 @@ export const updateResource = async (resource, id, data) => {
   return res.data;
 };
 
-export const createProductImages = async (productId, images) => {
-  console.log(`🖼️ POST /products/${productId}/images`, images);
-  const res = await apiClient.post(`/products/${productId}/images`, { images });
+export const createProductImages = async (productId, images, primaryImageUrl = null) => {
+  console.log(`🖼️ POST /products/${productId}/images`, { images, primaryImageUrl });
+  const res = await apiClient.post(`/products/${productId}/images`, { images, primaryImageUrl });
   return res.data;
 };
 

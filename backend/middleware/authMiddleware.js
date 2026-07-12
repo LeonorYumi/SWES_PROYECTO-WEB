@@ -1,5 +1,6 @@
 const { supabaseService, supabaseAnon, supabaseAdmin } = require("../supabase");
 const { findActiveSessionByToken } = require("../utils/sessionHelpers");
+const { createOrUpdateUserProfile, normalizeEmail } = require("../utils/authHelpers");
 
 const ADMIN_EMAILS = [
   "leonor.yumi@epn.edu.ec",
@@ -30,6 +31,82 @@ const getUserFromToken = async (token) => {
   return null;
 };
 
+const resolveAuthenticatedUser = async (token) => {
+  const user = await getUserFromToken(token);
+  if (!user) {
+    throw new Error("Token inválido o expirado");
+  }
+
+  const activeSession = await findActiveSessionByToken(token);
+  if (!activeSession || !activeSession.active) {
+    throw new Error("Sesión inválida o caducada");
+  }
+
+  const normalizedEmail = normalizeEmail(user.email);
+  let role = getRoleByEmail(normalizedEmail);
+  let phone = "";
+  let nombre = user.user_metadata?.full_name || user.user_metadata?.nombre || user.email || "";
+
+  let profile = null;
+  const { data: profileById, error: profileByIdError } = await supabaseAdmin
+    .from("users")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileByIdError && profileByIdError.code !== "PGRST116") {
+    console.error("Error leyendo perfil por id en middleware:", profileByIdError);
+  }
+
+  if (profileById) {
+    profile = profileById;
+  } else {
+    const { data: profileByEmail, error: profileByEmailError } = await supabaseAdmin
+      .from("users")
+      .select("*")
+      .eq("email", normalizedEmail)
+      .maybeSingle();
+
+    if (profileByEmailError && profileByEmailError.code !== "PGRST116") {
+      console.error("Error leyendo perfil por email en middleware:", profileByEmailError);
+    }
+
+    if (profileByEmail) {
+      profile = profileByEmail;
+    } else {
+      const { error: insertError, profile: createdProfile } = await createOrUpdateUserProfile(user.id, normalizedEmail, nombre, role, "");
+      if (insertError) {
+        if (insertError.code === "42501") {
+          console.warn("Advertencia RLS al crear perfil faltante en middleware:", insertError.message);
+        } else {
+          console.error("Error creando perfil faltante en middleware:", insertError);
+        }
+      }
+      if (createdProfile) {
+        profile = createdProfile;
+      }
+    }
+  }
+
+  if (profile) {
+    role = normalizeRole(profile.role) || role;
+    phone = profile.phone || "";
+    nombre = profile.nombre || nombre;
+  }
+
+  if (getRoleByEmail(normalizedEmail) === "administrador") {
+    role = "administrador";
+  }
+
+  return {
+    uid: profile?.id || user.id,
+    email: user.email,
+    role: normalizeRole(role),
+    phone,
+    name: nombre,
+  };
+};
+
 const verifyToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -47,64 +124,13 @@ const verifyToken = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
     console.log('   Token recibido:', token.slice(0, 20) + '...');
 
-    const user = await getUserFromToken(token);
-    if (!user) {
-      console.error('❌ Token inválido o expirado');
-      return res.status(401).json({ message: "Token inválido o expirado" });
-    }
+    const authUser = await resolveAuthenticatedUser(token);
 
-    const activeSession = await findActiveSessionByToken(token);
-    if (!activeSession || !activeSession.active) {
-      console.warn('Sesión no activa o invalidada para token');
-      return res.status(401).json({ message: "Sesión inválida o caducada" });
-    }
+    console.log('   ✅ Usuario autenticado:', authUser.email);
+    console.log('   Rol del usuario:', authUser.role);
+    console.log('   UID resuelto:', authUser.uid);
 
-    console.log('   ✅ Usuario autenticado:', user.email);
-
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("users")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    let role = "visitante";
-    if (profile) {
-      role = normalizeRole(profile.role) || role;
-      if (getRoleByEmail(user.email?.toLowerCase().trim()) === "administrador") {
-        role = "administrador";
-      }
-    } else {
-      const normalizedEmail = user.email?.toLowerCase().trim();
-      role = getRoleByEmail(normalizedEmail);
-
-      const { error: insertError } = await supabaseAdmin.from("users").upsert({
-        id: user.id,
-        email: normalizedEmail,
-        nombre: user.user_metadata?.full_name || user.email || "",
-        role,
-        phone: user.user_metadata?.phone || "",
-        created_at: new Date().toISOString(),
-      }, { onConflict: 'id' });
-      if (insertError) {
-        if (insertError.code === '42501') {
-          console.warn("Advertencia RLS al crear perfil faltante en middleware:", insertError.message);
-        } else {
-          console.error("Error creando perfil faltante en middleware:", insertError);
-        }
-      }
-    }
-
-    console.log('   Rol del usuario:', role);
-
-    req.user = {
-      uid: user.id,
-      email: user.email,
-      role: normalizeRole(role),
-    };
-
-    if (profileError && profileError.code !== "PGRST116") {
-      console.error("Error leyendo perfil en middleware:", profileError);
-    }
+    req.user = authUser;
 
     console.log('✅ Verificación exitosa');
     next();
@@ -177,4 +203,4 @@ const authorizeSelfOrAdmin = async (req, res, next) => {
   });
 };
 
-module.exports = { verifyToken, authorizeRoles, authorizeSelfOrAdmin };
+module.exports = { verifyToken, authorizeRoles, authorizeSelfOrAdmin, resolveAuthenticatedUser };

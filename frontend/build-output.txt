@@ -1,0 +1,45 @@
+
+> swes-frontend@1.0.0 build
+> vite build
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 8076 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                                 [39m[1m[2m    0.68 kB[22m[1m[22m[2m │ gzip:  0.41 kB[22m
+[2mdist/[22m[32massets/icono_sistema-DP0siaEF.png          [39m[1m[2m   19.68 kB[22m[1m[22m
+[2mdist/[22m[32massets/imagen_login-7ceDi_ga.jpeg          [39m[1m[2m   94.39 kB[22m[1m[22m
+[2mdist/[22m[32massets/imagen_landing-COf83BOU.png         [39m[1m[2m1,699.57 kB[22m[1m[22m
+[2mdist/[22m[35massets/index-sUsoH_U_.css                  [39m[1m[2m   45.22 kB[22m[1m[22m[2m │ gzip:  8.40 kB[22m
+[2mdist/[22m[36massets/icono_sistema-CpwKKE_T.js           [39m[1m[2m    0.06 kB[22m[1m[22m[2m │ gzip:  0.08 kB[22m
+[2mdist/[22m[36massets/triangle-alert-Bxb2JZtp.js          [39m[1m[2m    0.45 kB[22m[1m[22m[2m │ gzip:  0.32 kB[22m
+[2mdist/[22m[36massets/x-uty2f2Qy.js                       [39m[1m[2m    0.65 kB[22m[1m[22m[2m │ gzip:  0.31 kB[22m
+[2mdist/[22m[36massets/VerifyAccount-CneAJ1B2.js           [39m[1m[2m    0.66 kB[22m[1m[22m[2m │ gzip:  0.42 kB[22m
+[2mdist/[22m[36massets/trash-2-JLzU94Nr.js                 [39m[1m[2m    0.79 kB[22m[1m[22m[2m │ gzip:  0.37 kB[22m
+[2mdist/[22m[36massets/supabaseStorageService-B-xjSaZJ.js  [39m[1m[2m    1.03 kB[22m[1m[22m[2m │ gzip:  0.62 kB[22m
+[2mdist/[22m[36massets/crudService-BErGXesB.js             [39m[1m[2m    1.66 kB[22m[1m[22m[2m │ gzip:  0.70 kB[22m
+[2mdist/[22m[36massets/imagen_login-DmKHSMhL.js            [39m[1m[2m    1.70 kB[22m[1m[22m[2m │ gzip:  0.65 kB[22m
+[2mdist/[22m[36massets/index-aYD8huZ9.js                   [39m[1m[2m    1.85 kB[22m[1m[22m[2m │ gzip:  0.89 kB[22m
+[2mdist/[22m[36massets/iconBase-BQzZ_8xD.js                [39m[1m[2m    2.45 kB[22m[1m[22m[2m │ gzip:  1.08 kB[22m
+[2mdist/[22m[36massets/index-BYQ3JsYT.js                   [39m[1m[2m    2.46 kB[22m[1m[22m[2m │ gzip:  0.64 kB[22m
+[2mdist/[22m[36massets/createLucideIcon-CNKr284Q.js        [39m[1m[2m    2.58 kB[22m[1m[22m[2m │ gzip:  0.89 kB[22m
+[2mdist/[22m[36massets/ResetPassword-Cyi8USaU.js           [39m[1m[2m    3.92 kB[22m[1m[22m[2m │ gzip:  1.47 kB[22m
+[2mdist/[22m[36massets/Settings-DrLS30HP.js                [39m[1m[2m    5.13 kB[22m[1m[22m[2m │ gzip:  1.56 kB[22m
+[2mdist/[22m[36massets/ForgotPassword-BF9PhS1P.js          [39m[1m[2m    6.48 kB[22m[1m[22m[2m │ gzip:  2.01 kB[22m
+[2mdist/[22m[36massets/CartPage-b4O54DTx.js                [39m[1m[2m    6.78 kB[22m[1m[22m[2m │ gzip:  2.38 kB[22m
+[2mdist/[22m[36massets/AdminProducts-QTS6fmmY.js           [39m[1m[2m    7.77 kB[22m[1m[22m[2m │ gzip:  2.66 kB[22m
+[2mdist/[22m[36massets/Login-BT8A-JHb.js                   [39m[1m[2m    8.73 kB[22m[1m[22m[2m │ gzip:  3.12 kB[22m
+[2mdist/[22m[36massets/Dashboard-jb5gZlNR.js               [39m[1m[2m    8.77 kB[22m[1m[22m[2m │ gzip:  2.96 kB[22m
+[2mdist/[22m[36massets/Profile-Bla4aNK0.js                 [39m[1m[2m    9.74 kB[22m[1m[22m[2m │ gzip:  2.65 kB[22m
+[2mdist/[22m[36massets/Register-FXaJl2hv.js                [39m[1m[2m    9.83 kB[22m[1m[22m[2m │ gzip:  3.19 kB[22m
+[2mdist/[22m[36massets/Header-BAaOT_yy.js                  [39m[1m[2m   11.64 kB[22m[1m[22m[2m │ gzip:  3.74 kB[22m
+[2mdist/[22m[36massets/react-paypal-js-CLE3qO6c.js         [39m[1m[2m   11.83 kB[22m[1m[22m[2m │ gzip:  4.81 kB[22m
+[2mdist/[22m[36massets/Landing-CgAP8Jai.js                 [39m[1m[2m   13.28 kB[22m[1m[22m[2m │ gzip:  3.88 kB[22m
+[2mdist/[22m[36massets/ProductForm-DRneI7RQ.js             [39m[1m[2m   16.13 kB[22m[1m[22m[2m │ gzip:  5.21 kB[22m
+[2mdist/[22m[36massets/AdminUsers-fhcKETDL.js              [39m[1m[2m   16.41 kB[22m[1m[22m[2m │ gzip:  3.84 kB[22m
+[2mdist/[22m[36massets/AdminStats-J_1uB7Jk.js              [39m[1m[2m  162.23 kB[22m[1m[22m[2m │ gzip: 56.42 kB[22m
+[2mdist/[22m[36massets/supabaseClient-Bf7bB4hQ.js          [39m[1m[2m  211.32 kB[22m[1m[22m[2m │ gzip: 54.56 kB[22m
+[2mdist/[22m[36massets/index-CgRc-NPl.js                   [39m[1m[2m  221.83 kB[22m[1m[22m[2m │ gzip: 74.53 kB[22m
+[2mdist/[22m[36massets/EmprendimientoDetalle-C5gT-P3P.js   [39m[1m[2m  327.98 kB[22m[1m[22m[2m │ gzip: 81.33 kB[22m
+[32m✓ built in 20.13s[39m

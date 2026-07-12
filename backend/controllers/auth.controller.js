@@ -93,6 +93,15 @@ const login = async (req, res) => {
     }
 
     const userId = data.user?.id;
+    // ✅ FIX: uid "resuelto" que se le entrega al frontend. Por defecto es el id
+    // de auth, pero si el perfil real en la tabla `users` tiene un id distinto
+    // (por choque de email al hacer upsert, ver authHelpers.createOrUpdateUserProfile),
+    // usamos el id del PERFIL. Esto es necesario porque products.user_id,
+    // chat.ownerId, etc. se guardan usando el id del perfil, no el id de auth.
+    // Si no hacemos esto, localStorage.uid puede no coincidir con product.user_id
+    // para el mismo usuario, rompiendo comparaciones como isProductOwner en el chat.
+    let resolvedUid = userId;
+
     let sessionMessage = null;
     if (userId && data.session?.access_token) {
       try {
@@ -124,15 +133,19 @@ const login = async (req, res) => {
         role = getRoleByEmail(normalEmail) === "administrador" ? "administrador" : profile.role || role;
         phone = profile.phone || "";
         nombre = profile.nombre || nombre;
+        // profile.id === userId aquí siempre (se buscó por ese id), así que resolvedUid ya está bien.
       } else {
         if (getRoleByEmail(normalEmail) === "administrador") role = "administrador";
         const { error: profileErr, profile: createdProfile } = await createOrUpdateUserProfile(userId, normalEmail, nombre || "", role, "");
         if (profileErr) console.warn('Error creando perfil en login:', profileErr.message || profileErr);
         if (createdProfile && createdProfile.id && createdProfile.id !== userId) {
-          // If an existing profile was returned with a different id, prefer its role/phone/name
+          // Se encontró/devolvió un perfil EXISTENTE con id distinto al auth id actual
+          // (choque de email). Usamos ese perfil como fuente de verdad para todo,
+          // incluyendo el uid que mandamos al frontend.
           role = createdProfile.role || role;
           phone = createdProfile.phone || phone;
           nombre = createdProfile.nombre || nombre;
+          resolvedUid = createdProfile.id; // ✅ FIX clave
         }
       }
     }
@@ -140,7 +153,7 @@ const login = async (req, res) => {
     res.json({
       message: "Bienvenido",
       token: data.session?.access_token,
-      uid: data.user?.id,
+      uid: resolvedUid, // ✅ FIX: antes era data.user?.id directo
       email: data.user?.email,
       role,
       phone,
@@ -328,6 +341,10 @@ const googleSignIn = async (req, res) => {
     const normalEmail = normalizeEmail(user.email);
     let role = getRoleByEmail(normalEmail);
     let sessionMessage = null;
+    // ✅ FIX: mismo criterio que en login(). Por defecto usamos el auth id,
+    // pero si el perfil real en `users` tiene otro id (choque de email en el
+    // upsert), usamos ese id del perfil como uid a devolver al frontend.
+    let resolvedUid = user.id;
 
     const { data: profile } = await supabaseAdmin.from("users").select("*").eq("id", user.id).single();
     if (!profile) {
@@ -341,8 +358,12 @@ const googleSignIn = async (req, res) => {
       );
       if (profileErr) console.warn('Error creando perfil en googleSignIn:', profileErr.message || profileErr);
       if (createdProfile && createdProfile.role) role = createdProfile.role;
+      if (createdProfile && createdProfile.id && createdProfile.id !== user.id) {
+        resolvedUid = createdProfile.id; // ✅ FIX clave
+      }
     } else {
       role = getRoleByEmail(normalEmail) === "administrador" ? "administrador" : profile.role || role;
+      // profile.id === user.id aquí siempre (se buscó por ese id), resolvedUid ya está bien.
     }
 
     try {
@@ -365,7 +386,7 @@ const googleSignIn = async (req, res) => {
 
     res.json({
       message: "Bienvenido",
-      uid: user.id,
+      uid: resolvedUid, // ✅ FIX: antes era user.id directo
       email: normalEmail,
       role,
       name: user.user_metadata?.full_name || "",
@@ -377,4 +398,4 @@ const googleSignIn = async (req, res) => {
   }
 };
 
-module.exports = { register, verifyAccount, forgotPassword, resetPassword, resetPasswordWithCode, changePassword, login, googleSignIn };
+module.exports = { register, verifyAccount, forgotPassword, resetPassword, resetPasswordWithCode, changePassword, login, googleSignIn };    

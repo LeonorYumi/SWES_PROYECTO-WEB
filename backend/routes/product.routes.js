@@ -19,11 +19,16 @@ router.get("/products", async (req, res) => {
     }
 
     // Mapear campos para compatibilidad con frontend (sellerPhone/sellerName)
-    const mapped = (data || []).map((p) => ({
-      ...p,
-      sellerPhone: p.sellerphone || p.sellerPhone || p.seller_phone || p.users?.phone || null,
-      sellerName: p.sellername || p.sellerName || p.seller_name || p.users?.nombre || p.users?.email || null,
-    }));
+    // Mapear campos priorizando la relación real de la tabla de usuarios
+const mapped = (data || []).map((p) => ({
+  ...p,
+  // Primero intentamos sacar el teléfono de la relación; si no tiene perfil, usamos el respaldo
+  sellerPhone: p.users?.phone || p.sellerphone || p.sellerPhone || p.seller_phone || null,
+  // ✅ CORRECCIÓN CRÍTICA: Asegurar que el user_id sea el del perfil real si existe, para consistencia.
+  user_id: p.users?.id || p.user_id,
+  // Primero intentamos usar el nombre real del usuario; si no, el email del usuario; si no, el string de respaldo
+  sellerName: p.users?.nombre || p.users?.email || p.sellername || p.sellerName || p.seller_name || 'Anónimo',
+}));
 
     console.log('Productos devueltos:', mapped.length, '| Primer producto:', mapped[0] || 'ninguno');
 
@@ -41,30 +46,11 @@ router.get("/products/user/:userId", verifyToken, async (req, res) => {
     console.log('   Token presente:', !!req.headers.authorization);
     console.log('   Usuario del token:', req.user?.email);
     console.log('   UID solicitado:', userId);
-    // Si el cliente pide sus propios productos (userId === token uid),
-    // debemos intentar mapear el uid del token al profile.id existente
-    // cuando haya una fila en `users` con el mismo email pero distinto id.
-    let lookupUserId = userId;
-    try {
-      if (req.user?.uid && req.user.uid === userId) {
-        const { data: byId } = await supabaseAdmin.from('users').select('id,email').eq('id', req.user.uid).maybeSingle();
-        if (!byId) {
-          const email = (req.user.email || '').toLowerCase().trim();
-          const { data: byEmail } = await supabaseAdmin.from('users').select('id,email').eq('email', email).maybeSingle();
-          if (byEmail && byEmail.id) {
-            console.log('Mapping lookupUserId from token uid to profile id for product query:', req.user.uid, '->', byEmail.id);
-            lookupUserId = byEmail.id;
-          }
-        }
-      }
-    } catch (mapErr) {
-      console.warn('Error mapping token uid to profile id for products query:', mapErr.message || mapErr);
-    }
 
     const { data, error } = await supabaseAdmin
       .from("products")
       .select("*, users(id, email, nombre, phone)")
-      .eq("user_id", lookupUserId);
+      .eq("user_id", userId);
     
     if (error) {
       console.error('❌ Error Supabase:', error);
@@ -127,7 +113,7 @@ router.get('/products/:id/images', async (req, res) => {
 router.post('/products/:id/images', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { images } = req.body;
+    const { images, primaryImageUrl } = req.body;
 
     if (!Array.isArray(images) || images.length === 0) {
       return res.status(400).json({ message: 'Se requieren imágenes para guardar la galería.' });
@@ -150,6 +136,29 @@ router.post('/products/:id/images', verifyToken, async (req, res) => {
       return res.status(500).json({ message: 'Error al guardar imágenes de producto' });
     }
 
+    const productImageToSet = primaryImageUrl || rows[0]?.image_url;
+    if (productImageToSet) {
+      const { data: existingProduct, error: existingError } = await supabaseAdmin
+        .from('products')
+        .select('image')
+        .eq('id', id)
+        .single();
+
+      if (!existingError && existingProduct) {
+        const shouldUpdateProductImage = !!primaryImageUrl || !existingProduct.image;
+        if (shouldUpdateProductImage) {
+          const { error: updateError } = await supabaseAdmin
+            .from('products')
+            .update({ image: productImageToSet, updated_at: new Date().toISOString() })
+            .eq('id', id);
+
+          if (updateError) {
+            console.warn('No se pudo actualizar la imagen principal del producto:', updateError.message || updateError);
+          }
+        }
+      }
+    }
+
     res.status(201).json(data);
   } catch (error) {
     console.error('Error guardando imágenes de producto:', error);
@@ -165,12 +174,16 @@ router.get("/products/:id", async (req, res) => {
       .select("*, users(id, email, nombre, phone)")
       .eq("id", id)
       .single();
+
     if (error || !data) return res.status(404).json({ message: "Producto no encontrado" });
+
+    // Corrección aquí: Usamos 'data' en lugar de 'p'
     const mappedProduct = {
       ...data,
-      sellerPhone: data.sellerphone || data.sellerPhone || data.seller_phone || data.users?.phone || null,
-      sellerName: data.sellername || data.sellerName || data.seller_name || data.users?.nombre || data.users?.email || null,
+      sellerPhone: data.users?.phone || data.sellerphone || data.sellerPhone || data.seller_phone || null,
+      sellerName: data.users?.nombre || data.users?.email || data.sellername || data.sellerName || data.seller_name || 'Anónimo',
     };
+
     res.json(mappedProduct);
   } catch (error) {
     console.error("Error al obtener producto:", error);
@@ -346,7 +359,7 @@ router.get("/admin/stats", verifyToken, authorizeRoles("administrador"), async (
   try {
     const [{ count: totalProducts, error: totalError }, { data: products, error: productError }, { count: totalUsers, error: usersError }] = await Promise.all([
       supabaseAdmin.from("products").select("*", { count: "exact", head: true }),
-      supabaseAdmin.from("products").select("price"),
+      supabaseAdmin.from("products").select("id,price,category,user_id, users(id,email,nombre)"),
       supabaseAdmin.from("users").select("*", { count: "exact", head: true }),
     ]);
 
@@ -356,10 +369,53 @@ router.get("/admin/stats", verifyToken, authorizeRoles("administrador"), async (
 
     const totalValue = (products || []).reduce((sum, p) => sum + (Number(p.price) || 0), 0);
 
+    // Productos por categoría
+    const productsByCategory = {};
+    (products || []).forEach((p) => {
+      const cat = (p.category || 'Otros').toString();
+      productsByCategory[cat] = (productsByCategory[cat] || 0) + 1;
+    });
+
+    // Top vendedores por número de productos
+    const sellersCount = {};
+    const sellerProfiles = {};
+    (products || []).forEach((p) => {
+      const seller = (p.user_id || 'unknown').toString();
+      sellersCount[seller] = (sellersCount[seller] || 0) + 1;
+      if (!sellerProfiles[seller]) {
+        sellerProfiles[seller] = {
+          name: p.users?.nombre || p.users?.email || null,
+          email: p.users?.email || null,
+        };
+      }
+    });
+    const topSellers = Object.entries(sellersCount)
+      .map(([id, count]) => ({
+        sellerId: id,
+        sellerName: sellerProfiles[id]?.name || null,
+        productCount: count,
+      }))
+      .sort((a, b) => b.productCount - a.productCount)
+      .slice(0, 10);
+
+    // Usuarios por rol
+    const { data: usersData, error: usersDataErr } = await supabaseAdmin.from('users').select('id,role');
+    const usersByRole = {};
+    if (!usersDataErr && Array.isArray(usersData)) {
+      usersData.forEach((u) => {
+        const r = (u.role || 'visitante').toString();
+        usersByRole[r] = (usersByRole[r] || 0) + 1;
+      });
+    }
+
     res.json({
       totalUsers: totalUsers || 0,
       totalProducts: totalProducts || 0,
       totalValue: totalValue.toFixed(2),
+      avgPrice: ((products || []).length ? ((totalValue / (products || []).length).toFixed(2)) : '0.00'),
+      productsByCategory,
+      topSellers,
+      usersByRole,
     });
   } catch (error) {
     console.error("Error al generar estadísticas de administrador:", error);

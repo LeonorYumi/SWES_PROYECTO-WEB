@@ -1,16 +1,29 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, ShoppingCart } from 'lucide-react';
+import { Menu, X, ShoppingCart, Bell } from 'lucide-react'; // Se añade Bell
 import logoSwes from '../assets/icono_sistema.png';
 import { useCart } from '../context/CartContext';
+import notificationService from '../services/notificationService';
 
 function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false); // Estado para el dropdown de notificaciones
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0); // ✅ Contador dinámico de mensajes no leídos
+  
   const dropdownRef = useRef(null);
+  const notificationsRef = useRef(null); // Ref para cerrar al hacer clic afuera
+  
   const location = useLocation();
   const navigate = useNavigate();
   const { totalItems } = useCart();
+
+  // Obtener ID del usuario actual desde localStorage
+  const userId = typeof window !== 'undefined' ? localStorage.getItem('uid') : null;
+
+  // ✅ NUEVO: Estado para notificaciones dinámicas del chat
+  const [notifications, setNotifications] = useState([]);
+
   const [username, setUsername] = useState(
     typeof window !== 'undefined'
       ? localStorage.getItem('name') || localStorage.getItem('displayName') || localStorage.getItem('email') || 'Usuario'
@@ -30,22 +43,74 @@ function Navbar() {
     localStorage.removeItem('phone');
     navigate('/login');
   };
+
   useEffect(() => {
     setUsername(localStorage.getItem('name') || localStorage.getItem('email') || 'Usuario');
     setAvatarUrl(localStorage.getItem('avatar_url') || '');
   }, []);
+
+  // Manejador de clics externos modificado para soportar ambos dropdowns
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setDropdownOpen(false);
       }
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target)) {
+        setNotificationsOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
+
+  // ✅ NUEVO: Polling automático para obtener el contador de mensajes no leídos
+  useEffect(() => {
+    if (!userId) return;
+
+    // Función para actualizar el contador
+    const updateUnreadCount = async () => {
+      try {
+        const data = await notificationService.getUnreadCount(userId);
+        setUnreadCount(data.unreadCount || 0);
+
+        // Si el backend devuelve detalles por sala, usamos esas entradas para crear notificaciones clicables
+        if (Array.isArray(data.unreadRooms) && data.unreadRooms.length > 0) {
+          const mapped = data.unreadRooms.map((r) => ({
+            id: `room-${r.roomId}-${r.lastCreatedAt || Date.now()}`,
+            text: `${r.unreadCount} mensaje${r.unreadCount > 1 ? 's' : ''} de ${r.lastSenderName || 'alguien'}: "${(r.lastMessage || '').slice(0, 60)}${(r.lastMessage||'').length>60? '...' : ''}"`,
+            unread: true,
+            type: 'chat',
+            roomId: r.roomId,            lastSenderId: r.lastSenderId || r.lastSenderId || null,          }));
+          setNotifications(mapped);
+        } else if (data.unreadCount > 0) {
+          setNotifications([
+            {
+              id: `unread-messages-${Date.now()}`,
+              text: `Tienes ${data.unreadCount} mensaje${data.unreadCount > 1 ? 's' : ''} nuevo${data.unreadCount > 1 ? 's' : ''} en el chat`,
+              unread: true,
+              type: 'chat'
+            }
+          ]);
+        } else {
+          setNotifications([]);
+        }
+      } catch (error) {
+        console.error('Error al actualizar contador de notificaciones:', error);
+      }
+    };
+
+    // Actualizar inmediatamente
+    updateUnreadCount();
+
+    // Hacer polling cada 3 segundos para mantener actualizado el contador
+    const pollInterval = setInterval(updateUnreadCount, 3000);
+
+    return () => clearInterval(pollInterval);
+  }, [userId]);
 
   const links = [
     { to: '/dashboard', label: 'Tablero' },
@@ -90,6 +155,77 @@ function Navbar() {
             })}
           </div>
 
+          {/* Icono de Notificaciones */}
+          <div className="relative" ref={notificationsRef}>
+            <button
+              onClick={() => {
+                setNotificationsOpen(!notificationsOpen);
+                setDropdownOpen(false); // Cierra el del perfil por si acaso
+              }}
+              className="relative flex items-center justify-center w-9 h-9 rounded-input text-neutral-subtle hover:text-neutral-text hover:bg-neutral-bg transition-colors"
+              aria-label="Ver notificaciones"
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-1 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center animation-pulse">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Dropdown de Notificaciones */}
+            {notificationsOpen && (
+              <div className="absolute right-0 mt-2 w-72 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden transform origin-top-right transition-all">
+                <div className="px-4 py-3 border-b border-neutral-border bg-neutral-bg/30 flex justify-between items-center">
+                  <p className="text-xs font-bold text-neutral-text">Notificaciones de Chat</p>
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={() => {
+                        setUnreadCount(0);
+                        setNotifications([]);
+                      }} 
+                      className="text-[11px] text-brand-primary hover:underline font-medium"
+                    >
+                      Marcar leído
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
+                  {notifications.length > 0 ? (
+                    notifications.map((notification) => (
+                      <div 
+                        key={notification.id} 
+                        onClick={() => {
+                          if (notification.roomId) {
+                            setNotificationsOpen(false);
+                            const target = `/emprendimientos/${notification.roomId}${notification.lastSenderId ? `?chatWith=${encodeURIComponent(notification.lastSenderId)}` : ''}`;
+                            navigate(target);
+                          }
+                        }}
+                        role={notification.roomId ? 'button' : 'article'}
+                        className={`px-4 py-3 text-xs transition-colors flex items-start gap-2 cursor-pointer ${notification.unread ? 'bg-blue-50/40 font-medium text-neutral-text' : 'text-neutral-subtle'}`}
+                      >
+                        {notification.unread && <span className="w-2 h-2 rounded-full bg-brand-primary mt-1.5 shrink-0" />}
+                        <div className="flex-1">
+                          <p className="leading-normal">{notification.text}</p>
+                          {notification.lastSenderName && (
+                            <p className="text-[11px] text-gray-400 mt-1">De: {notification.lastSenderName}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-6">
+                      <p className="text-xs text-gray-400">No tienes mensajes nuevos</p>
+                      <p className="text-[11px] text-gray-300 mt-1">Cuando alguien te envíe un mensaje, aparecerá aquí</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Carrito de Compras */}
           <Link
             to="/carrito"
             className="relative flex items-center justify-center w-9 h-9 rounded-input text-neutral-subtle hover:text-neutral-text hover:bg-neutral-bg transition-colors"
@@ -115,7 +251,10 @@ function Navbar() {
           {/* Avatar con Dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
+              onClick={() => {
+                setDropdownOpen(!dropdownOpen);
+                setNotificationsOpen(false); // Cierra el de notificaciones por si acaso
+              }}
               className="w-9 h-9 rounded-full overflow-hidden bg-blue-950 text-white font-bold text-sm hover:bg-blue-900 transition-colors border border-gray-100 flex items-center justify-center shadow-xs"
             >
               {avatarUrl ? (
