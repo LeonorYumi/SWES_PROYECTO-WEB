@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:9000/api";
+
 export default function ChatWidget() {
 
   const [open, setOpen] = useState(false);
@@ -20,7 +22,7 @@ export default function ChatWidget() {
     try {
 
       const response = await fetch(
-        "http://localhost:9000/api/ai",
+        `${API_URL}/ai`,
         {
           method: "POST",
           headers: {
@@ -32,6 +34,9 @@ export default function ChatWidget() {
         }
       );
 
+      if (!response.ok) {
+        throw new Error(`Error del servidor: ${response.status}`);
+      }
 
       const data = await response.json();
 
