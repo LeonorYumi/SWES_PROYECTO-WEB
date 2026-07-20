@@ -127,11 +127,11 @@ function Dashboard() {
                 </p>
 
                 {/* Acciones */}
-                <div className="mb-4 flex items-center gap-2">
+                <div className="mt-auto flex flex-col sm:flex-row items-center gap-2">
                   <button
                   type="button"
                   onClick={() => navigate(`/emprendimientos/${it.id}`)}
-                  className="flex-1 inline-flex items-center justify-center rounded-xl bg-blue-900 hover:bg-blue-950 text-white px-4 py-2.5 text-xs font-semibold transition-colors duration-200 shadow-sm whitespace-nowrap"
+                  className="w-full sm:flex-1 inline-flex items-center justify-center rounded-xl bg-blue-900 hover:bg-blue-950 text-white px-3 py-2.5 text-xs font-semibold transition-colors duration-200 shadow-sm"
                   >
                     Ver más información
                   </button>
@@ -139,10 +139,10 @@ function Dashboard() {
                   <button
                   type="button"
                   onClick={() => addItem(it)}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-blue-900 text-blue-900 px-4 py-2.5 text-xs font-semibold transition-colors duration-200 hover:bg-blue-900 hover:text-white whitespace-nowrap"
+                  className="w-full sm:flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-blue-900 text-blue-900 px-3 py-2.5 text-xs font-semibold transition-colors duration-200 hover:bg-blue-900 hover:text-white"
                   >
                     <FaShoppingCart size={12} />
-                    Agregar al carrito
+                    <span>Agregar al carrito</span>
                   </button>
                 </div>
                 
