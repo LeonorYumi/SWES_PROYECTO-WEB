@@ -16,18 +16,15 @@ const clearSessionAndRedirect = () => {
 
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) {
-    config.headers = {
-      ...config.headers,
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
-  } else {
-    config.headers = {
-      ...config.headers,
-      'Content-Type': 'application/json',
-    };
-  }
+  const isFormData = typeof FormData !== 'undefined' && config.data instanceof FormData;
+
+  config.headers = {
+    ...config.headers,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    // No forzar Content-Type si es FormData: el navegador debe poner el boundary correcto
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+  };
+
   return config;
 });
 
@@ -47,7 +44,7 @@ const getAuthHeaders = () => {
 
   console.log('🔐 getAuthHeaders():');
   console.log('   Token disponible:', token ? '✅ Sí' : '❌ No');
-  
+
   const headers = {
     'Content-Type': 'application/json'
   };
@@ -112,12 +109,25 @@ export const deleteResource = async (resource, id) => {
   return res.data;
 };
 
-export default { 
-  getAll, 
-  getById, 
-  getByUserId, 
-  createResource, 
-  createProductImages, 
-  updateResource, 
-  deleteResource 
+// NUEVA FUNCIÓN: subir archivos (FormData) a cualquier endpoint, ej. avatar
+export const uploadFile = async (resource, id, subpath, file, fieldName = 'file') => {
+  console.log(`📤 POST /${resource}/${id}/${subpath}`);
+  const formData = new FormData();
+  formData.append(fieldName, file);
+
+  const res = await apiClient.post(`/${resource}/${id}/${subpath}`, formData);
+  console.log(`Respuesta del servidor al SUBIR archivo a ${resource}/${id}/${subpath}:`, res.data);
+  return res.data;
+};
+
+export default {
+  getAll,
+  getById,
+  getByUserId,
+  createResource,
+  createProductImages,
+  getProductImages,
+  updateResource,
+  deleteResource,
+  uploadFile,
 };

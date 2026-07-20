@@ -96,8 +96,6 @@ function ProfileEditor() {
       } else {
         localStorage.removeItem('avatar_url');
       }
-      localStorage.setItem('name', name);
-      localStorage.setItem('phone', phone);
       setAvatarUrl(newAvatarUrl);
       setAvatarUrlInput(newAvatarUrl);
       setAvatarFile(null);
@@ -118,7 +116,7 @@ function ProfileEditor() {
   };
 
   return (
-    <div className>
+    <div className="max-w-2xl">
       <h2 className="text-2xl font-bold text-gray-900 mb-1">Editar perfil</h2>
       <p className="text-sm text-gray-500 mb-6">Actualiza tu información de contacto y avatar.</p>
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -154,31 +152,31 @@ function ProfileEditor() {
         </div>
 
         <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4 sm:p-5 space-y-4">
-  <label className="block text-sm font-semibold text-gray-700">Avatar</label>
-  <div className="flex items-center gap-4">
-    <div className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-full bg-white border border-gray-200">
-      {avatarUrl ? (
-        <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
-      ) : (
-        <div className="grid h-full place-items-center text-gray-400 text-sm">?</div>
-      )}
-    </div>
-    <label className="cursor-pointer rounded-full bg-blue-900 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-800 inline-flex items-center gap-2 whitespace-nowrap">
-      Seleccionar imagen
-      <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-    </label>
-  </div>
-  <div className="space-y-1">
-    <input
-      type="url"
-      value={avatarUrlInput}
-      onChange={(e) => setAvatarUrlInput(e.target.value)}
-      placeholder="O ingresa una URL de avatar"
-      className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
-    />
-    <p className="text-[11px] text-gray-400">Usa una URL válida o sube un archivo.</p>
-  </div>
-</div>
+          <label className="block text-sm font-semibold text-gray-700">Avatar</label>
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-full bg-white border border-gray-200">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+              ) : (
+                <div className="grid h-full place-items-center text-gray-400 text-sm">?</div>
+              )}
+            </div>
+            <label className="cursor-pointer rounded-full bg-blue-900 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-800 inline-flex items-center gap-2 whitespace-nowrap">
+              Seleccionar imagen
+              <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+            </label>
+          </div>
+          <div className="space-y-1">
+            <input
+              type="url"
+              value={avatarUrlInput}
+              onChange={(e) => setAvatarUrlInput(e.target.value)}
+              placeholder="O ingresa una URL de avatar"
+              className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
+            />
+            <p className="text-[11px] text-gray-400">Usa una URL válida o sube un archivo.</p>
+          </div>
+        </div>
 
         {avatarFile && (
           <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">

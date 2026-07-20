@@ -175,11 +175,9 @@ const deleteUser = async (req, res) => {
     const { id } = req.params;
     const { data: existing } = await supabaseAdmin.from("users").select("id").eq("id", id).single();
     if (!existing) return res.status(404).json({ mensaje: "Usuario no encontrado" });
-    // Intentar eliminar la cuenta de autenticación. Si no existe, continuar y eliminar sólo el perfil.
     try {
       const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
       if (authError) {
-        // Si el error indica que el usuario no existe en auth, lo ignoramos.
         console.warn('Advertencia al eliminar auth user:', authError.message || authError);
       }
     } catch (ae) {
@@ -208,7 +206,6 @@ const createUser = async (req, res) => {
     const validation = validateUserInput(normalizedEmail, password, nombre);
     if (validation) return res.status(400).json({ mensaje: validation });
 
-    // Enforce role-specific rules: emprendedor debe usar @epn.edu.ec y tener teléfono
     const selectedRole = (role || "visitante").toLowerCase();
     if (selectedRole === "emprendedor") {
       if (!normalizedEmail.endsWith("@epn.edu.ec")) {
@@ -251,4 +248,41 @@ const createUser = async (req, res) => {
   }
 };
 
-module.exports = { getAllUsers, getUserById, updateUser, deleteUser, createUser };
+// NUEVA FUNCIÓN: subir avatar usando el Service Role (se salta el RLS de Storage)
+const uploadAvatar = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ mensaje: "No se envió ningún archivo" });
+    }
+
+    const safeName = file.originalname.replace(/\s+/g, "_");
+    const filePath = `users/${id}/${Date.now()}_${safeName}`;
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from("avatars")
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error("Error subiendo avatar a Supabase:", uploadError);
+      return res.status(500).json({ mensaje: "Error al subir el avatar", detail: uploadError.message });
+    }
+
+    const { data: publicData } = supabaseAdmin.storage.from("avatars").getPublicUrl(filePath);
+
+    return res.json({
+      url: publicData.publicUrl,
+      path: filePath,
+    });
+  } catch (err) {
+    console.error("Error al subir avatar:", err);
+    res.status(500).json({ mensaje: "Error al subir el avatar", detail: err.message || String(err) });
+  }
+};
+
+module.exports = { getAllUsers, getUserById, updateUser, deleteUser, createUser, uploadAvatar };
