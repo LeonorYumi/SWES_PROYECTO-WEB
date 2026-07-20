@@ -41,12 +41,26 @@ function Navbar() {
     localStorage.removeItem('email');
     localStorage.removeItem('name');
     localStorage.removeItem('phone');
+    localStorage.removeItem('avatar_url');
     navigate('/login');
   };
 
   useEffect(() => {
     setUsername(localStorage.getItem('name') || localStorage.getItem('email') || 'Usuario');
     setAvatarUrl(localStorage.getItem('avatar_url') || '');
+
+    const handleProfileUpdated = (event) => {
+      const detail = event?.detail || {};
+      if (detail.avatarUrl !== undefined) {
+        setAvatarUrl(detail.avatarUrl || '');
+      }
+      if (detail.name !== undefined) {
+        setUsername(detail.name || localStorage.getItem('name') || 'Usuario');
+      }
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdated);
+    return () => window.removeEventListener('profileUpdated', handleProfileUpdated);
   }, []);
 
   // Manejador de clics externos modificado para soportar ambos dropdowns

@@ -126,26 +126,32 @@ const login = async (req, res) => {
     let role = getRoleByEmail(normalEmail);
     let phone = "";
     let nombre = data.user?.user_metadata?.nombre || "";
+    let avatarUrl = "";
+    let profile = null;
+    let createdProfile = null;
 
     if (userId) {
-      const { data: profile } = await supabaseAdmin.from("users").select("*").eq("id", userId).single();
+      const profileResult = await supabaseAdmin.from("users").select("*").eq("id", userId).single();
+      profile = profileResult.data;
       if (profile) {
         role = getRoleByEmail(normalEmail) === "administrador" ? "administrador" : profile.role || role;
         phone = profile.phone || "";
         nombre = profile.nombre || nombre;
+        avatarUrl = profile.avatar_url || data.user?.user_metadata?.avatar_url || "";
         // profile.id === userId aquí siempre (se buscó por ese id), así que resolvedUid ya está bien.
       } else {
         if (getRoleByEmail(normalEmail) === "administrador") role = "administrador";
-        const { error: profileErr, profile: createdProfile } = await createOrUpdateUserProfile(userId, normalEmail, nombre || "", role, "");
-        if (profileErr) console.warn('Error creando perfil en login:', profileErr.message || profileErr);
-        if (createdProfile && createdProfile.id && createdProfile.id !== userId) {
-          // Se encontró/devolvió un perfil EXISTENTE con id distinto al auth id actual
-          // (choque de email). Usamos ese perfil como fuente de verdad para todo,
-          // incluyendo el uid que mandamos al frontend.
+        const profileResult2 = await createOrUpdateUserProfile(userId, normalEmail, nombre || "", role, "");
+        createdProfile = profileResult2.profile;
+        if (profileResult2.error) console.warn('Error creando perfil en login:', profileResult2.error.message || profileResult2.error);
+        if (createdProfile) {
           role = createdProfile.role || role;
           phone = createdProfile.phone || phone;
           nombre = createdProfile.nombre || nombre;
-          resolvedUid = createdProfile.id; // ✅ FIX clave
+          avatarUrl = createdProfile.avatar_url || data.user?.user_metadata?.avatar_url || "";
+          if (createdProfile.id && createdProfile.id !== userId) {
+            resolvedUid = createdProfile.id; // ✅ FIX clave
+          }
         }
       }
     }
@@ -158,6 +164,7 @@ const login = async (req, res) => {
       role,
       phone,
       name: nombre,
+      avatar_url: avatarUrl,
       sessionMessage,
     });
   } catch (err) {
@@ -341,6 +348,7 @@ const googleSignIn = async (req, res) => {
     const normalEmail = normalizeEmail(user.email);
     let role = getRoleByEmail(normalEmail);
     let sessionMessage = null;
+    let avatarUrl = "";
     // ✅ FIX: mismo criterio que en login(). Por defecto usamos el auth id,
     // pero si el perfil real en `users` tiene otro id (choque de email en el
     // upsert), usamos ese id del perfil como uid a devolver al frontend.
@@ -361,8 +369,12 @@ const googleSignIn = async (req, res) => {
       if (createdProfile && createdProfile.id && createdProfile.id !== user.id) {
         resolvedUid = createdProfile.id; // ✅ FIX clave
       }
+      if (createdProfile?.avatar_url) {
+        avatarUrl = createdProfile.avatar_url;
+      }
     } else {
       role = getRoleByEmail(normalEmail) === "administrador" ? "administrador" : profile.role || role;
+      avatarUrl = profile.avatar_url || "";
       // profile.id === user.id aquí siempre (se buscó por ese id), resolvedUid ya está bien.
     }
 
@@ -390,6 +402,7 @@ const googleSignIn = async (req, res) => {
       email: normalEmail,
       role,
       name: user.user_metadata?.full_name || "",
+      avatar_url: avatarUrl,
       sessionMessage,
     });
   } catch (err) {

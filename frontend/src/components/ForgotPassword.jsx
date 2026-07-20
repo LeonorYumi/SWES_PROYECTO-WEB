@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { forgotPassword, resetPasswordWithCode } from '../services/authService';
 
 function ForgotPassword() {
@@ -11,26 +11,26 @@ function ForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
   const [resetToken, setResetToken] = useState('');
+  const [showTokenBox, setShowTokenBox] = useState(false);
   const navigate = useNavigate();
 
   const handleSendCode = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setAlerta({ mostrar: false, texto: '', tipo: '' });
     setLoading(true);
     setPreviewUrl('');
+    setShowTokenBox(false);
 
     try {
       const data = await forgotPassword(email.trim());
-      setAlerta({
-        mostrar: true,
-        texto: data.message || 'Si el correo existe, se ha enviado un código de recuperación.',
-        tipo: 'success'
-      });
       setEmailSent(true);
       setResetToken(data.resetToken || '');
-      if (data.previewUrl) {
-        setPreviewUrl(data.previewUrl);
-      }
+      setPreviewUrl(data.previewUrl || '');
+      setAlerta({
+        mostrar: true,
+        texto: data.message || 'Código enviado. Presiona “Obtener token” para ver tu código.',
+        tipo: 'success'
+      });
     } catch (error) {
       console.error('Error en recuperación de contraseña:', error);
       setAlerta({
@@ -58,6 +58,8 @@ function ForgotPassword() {
       setEmailSent(false);
       setCode("");
       setNewPassword("");
+      setResetToken('');
+      setShowTokenBox(false);
       // redirect to login after a short delay
       setTimeout(() => navigate('/login'), 1200);
     } catch (error) {
@@ -73,8 +75,8 @@ function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#f4f6f8] p-4 py-6">
-      <div className="w-full max-w-md flex flex-col gap-4 bg-white rounded-2xl px-8 py-10 shadow-sm border border-gray-100 max-h-[90vh] overflow-y-auto">
+    <div className="min-h-screen w-full flex items-center justify-center bg-slate-100 p-4 py-8">
+      <div className="w-full max-w-xl flex flex-col gap-5 bg-white rounded-[28px] px-7 py-10 shadow-[0_30px_80px_rgba(15,23,42,0.12)] border border-slate-200 overflow-hidden">
 
         {/* Encabezado */}
         <div>
@@ -175,13 +177,25 @@ function ForgotPassword() {
             </div>
 
             <button
+              type="button"
+              onClick={() => setShowTokenBox(true)}
+              disabled={!resetToken}
+              className="w-full rounded-xl bg-blue-900 text-white py-3 text-sm font-semibold transition hover:bg-blue-950 disabled:bg-slate-300"
+            >
+              Obtener token
+            </button>
+
+            <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-900 hover:bg-blue-950 disabled:bg-gray-300 text-white font-semibold
-                         py-3 rounded-xl text-sm transition-all"
+              className="w-full rounded-xl bg-emerald-600 text-white py-3 text-sm font-semibold transition hover:bg-emerald-700 disabled:bg-slate-300"
             >
               {loading ? 'Restableciendo...' : 'Restablecer contraseña'}
             </button>
+
+            <p className="text-center text-xs text-slate-500 mt-2">
+              Si ya copiaste el token, ingresa el código y tu nueva contraseña para completar la recuperación.
+            </p>
 
             {previewUrl && (
               <div className="rounded-xl bg-gray-50 p-3 text-xs text-gray-700 border border-gray-200 break-words">
@@ -189,25 +203,6 @@ function ForgotPassword() {
                 <a href={previewUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
                   Abrir correo de prueba
                 </a>
-              </div>
-            )}
-
-            {resetToken && (
-              <div className="rounded-xl bg-gray-50 p-3 text-xs text-gray-700 border border-gray-200 break-words">
-                <p className="font-semibold">Token de recuperación:</p>
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm font-mono break-all">{resetToken}</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(resetToken);
-                      setAlerta({ mostrar: true, texto: 'Token copiado al portapapeles', tipo: 'success' });
-                    }}
-                    className="self-start px-3 py-2 rounded-xl border border-blue-900/20 bg-blue-50 text-blue-900 text-xs font-semibold hover:bg-blue-100 transition"
-                  >
-                    Copiar token
-                  </button>
-                </div>
               </div>
             )}
 
@@ -219,8 +214,10 @@ function ForgotPassword() {
                 setCode("");
                 setNewPassword("");
                 setPreviewUrl('');
+                setResetToken('');
+                setShowTokenBox(false);
               }}
-              className="w-full border border-gray-200 text-gray-900 bg-white py-3 rounded-xl text-sm hover:bg-gray-50 transition"
+              className="w-full rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100 transition"
             >
               Enviar otro código
             </button>
@@ -230,6 +227,55 @@ function ForgotPassword() {
         <p className="text-center text-xs text-gray-500 mt-1">© 2026 Escuela Politécnica Nacional</p>
 
       </div>
+
+      {resetToken && showTokenBox && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4">
+          <div className="w-full max-w-md rounded-[28px] border border-slate-700 bg-slate-950 p-6 shadow-2xl shadow-slate-950/40 text-white">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Token de recuperación</p>
+                <h2 className="mt-2 text-xl font-semibold">Copia tu código</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTokenBox(false)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-slate-200 transition hover:bg-slate-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-6 rounded-[24px] border border-slate-800 bg-slate-900 p-6 text-center text-[2rem] font-semibold tracking-[0.32em] text-slate-100">
+              {resetToken}
+            </div>
+
+            <div className="mt-5 rounded-3xl bg-slate-800/90 p-4 text-sm text-slate-300">
+              <p className="font-semibold text-slate-100">¿Qué sigue?</p>
+              <p className="mt-2 text-slate-400">Cierra esta ventana, pega el código en “Código de verificación” y crea tu nueva contraseña.</p>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-between">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(resetToken);
+                  setAlerta({ mostrar: true, texto: 'Token copiado al portapapeles', tipo: 'success' });
+                }}
+                className="rounded-full bg-blue-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-400"
+              >
+                Copiar token
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowTokenBox(false)}
+                className="rounded-full border border-slate-600 bg-slate-800 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

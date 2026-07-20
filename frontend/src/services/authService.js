@@ -1,3 +1,4 @@
+// frontend/src/services/authService.js
 import axios from "axios";
 
 const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:9000/api";
@@ -57,6 +58,35 @@ export const googleSignIn = async (accessToken) => {
 };
 
 export const checkActiveSession = async () => {
-  const response = await axios.get(`${BACKEND}/session/active`, getAuthHeaders());
-  return response.data;
+  try {
+    const response = await axios.get(`${BACKEND}/session/active`, getAuthHeaders());
+    return response.data;
+  } catch (error) {
+    return { active: false };
+  }
+};
+
+
+export const logoutUser = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('uid');
+  localStorage.removeItem('name');
+  localStorage.removeItem('email');
+  localStorage.removeItem('phone');
+  localStorage.removeItem('avatar_url');
+  localStorage.removeItem('user');
+};
+
+export default {
+  registerUser,
+  loginUser,
+  updateUser,
+  verifyAccount,
+  forgotPassword,
+  resetPasswordWithCode,
+  changePassword,
+  resetPassword,
+  googleSignIn,
+  checkActiveSession,
+  logoutUser
 };

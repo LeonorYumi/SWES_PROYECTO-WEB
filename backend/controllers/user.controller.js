@@ -1,6 +1,23 @@
 const { supabaseAdmin } = require("../supabase");
 const { normalizeEmail, validateUserInput, createOrUpdateUserProfile } = require("../utils/authHelpers");
 
+const updateAuthUserMetadata = async (userId, metadata) => {
+  if (!userId || !metadata || Object.keys(metadata).length === 0) return null;
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      user_metadata: metadata,
+    });
+    if (error) {
+      console.error("Error actualizando metadata del usuario:", error);
+      throw error;
+    }
+    return data;
+  } catch (err) {
+    console.error("Excepción actualizando metadata del usuario:", err);
+    throw err;
+  }
+};
+
 const getAllUsers = async (req, res) => {
   try {
     const { data, error } = await supabaseAdmin.from("users").select("*");
@@ -34,6 +51,19 @@ const getUserById = async (req, res) => {
     }
 
     if (error || !data) return res.status(404).json({ mensaje: "Usuario no encontrado" });
+
+    if (!data.avatar_url) {
+      try {
+        const authUser = await supabaseAdmin.auth.admin.getUserById(data.id);
+        const metaAvatar = authUser?.data?.user?.user_metadata?.avatar_url;
+        if (metaAvatar) {
+          data.avatar_url = metaAvatar;
+        }
+      } catch (metaErr) {
+        console.warn('No fue posible cargar avatar_url desde metadata auth:', metaErr);
+      }
+    }
+
     res.json(data);
   } catch (err) {
     console.error("Error al obtener usuario:", err);
@@ -71,6 +101,7 @@ const updateUser = async (req, res) => {
 
     const supportsAvatarUrl = Object.prototype.hasOwnProperty.call(existing, "avatar_url");
     const allowedFields = ["nombre", "role", "phone", "email", "avatar_url"];
+    let avatarUrlBackup;
     const sanitizeValue = (key, value) => {
       if (value === null || value === undefined) return undefined;
       if (key === "phone") {
@@ -90,18 +121,25 @@ const updateUser = async (req, res) => {
 
     const updatePayload = Object.entries(req.body).reduce((acc, [key, value]) => {
       if (!allowedFields.includes(key)) return acc;
-      if (key === "avatar_url" && !supportsAvatarUrl) return acc;
       const sanitized = sanitizeValue(key, value);
       if (sanitized === undefined) return acc;
+      if (key === "avatar_url") {
+        avatarUrlBackup = sanitized;
+        if (!supportsAvatarUrl) return acc;
+      }
       acc[key] = sanitized;
       return acc;
     }, {});
 
+    const targetId = existing.id || id;
     if (Object.keys(updatePayload).length === 0) {
+      if (avatarUrlBackup) {
+        await updateAuthUserMetadata(targetId, { avatar_url: avatarUrlBackup });
+        return res.json({ mensaje: "Perfil actualizado correctamente.", avatar_url: avatarUrlBackup });
+      }
       return res.status(400).json({ mensaje: "No hay campos válidos para actualizar" });
     }
 
-    const targetId = existing.id || id;
     const performUpdate = async (payload) => {
       return await supabaseAdmin
         .from("users")
@@ -143,25 +181,47 @@ const updateUser = async (req, res) => {
       if (invalidColumns.length > 0) {
         invalidColumns.forEach((column) => {
           console.warn(`Campo no válido en users table: ${column}. Se omitirá y se reintentará.`);
+          if (column === "avatar_url" && updatePayload.avatar_url) {
+            avatarUrlBackup = avatarUrlBackup || updatePayload.avatar_url;
+          }
           delete updatePayload[column];
         });
 
         if (Object.keys(updatePayload).length === 0) {
+          if (avatarUrlBackup) {
+            await updateAuthUserMetadata(targetId, { avatar_url: avatarUrlBackup });
+            return res.json({ mensaje: "Perfil actualizado correctamente.", avatar_url: avatarUrlBackup });
+          }
           return res.status(200).json({ mensaje: "Perfil actualizado parcialmente. Algunos campos no son compatibles con la tabla." });
         }
 
         updateResult = await performUpdate(updatePayload);
       } else if (updatePayload.avatar_url) {
         console.warn("No se pudo detectar el campo inválido, eliminando avatar_url y reintentando.");
+        avatarUrlBackup = avatarUrlBackup || updatePayload.avatar_url;
         delete updatePayload.avatar_url;
         if (Object.keys(updatePayload).length === 0) {
-          return res.status(200).json({ mensaje: "Perfil actualizado parcialmente. El avatar no se puede guardar porque la tabla no soporta ese campo." });
+          try {
+            await updateAuthUserMetadata(targetId, { avatar_url: avatarUrlBackup });
+          } catch (metadataErr) {
+            console.warn('Error guardando avatar como metadata:', metadataErr);
+          }
+          return res.json({ mensaje: "Perfil actualizado correctamente.", avatar_url: avatarUrlBackup });
         }
         updateResult = await performUpdate(updatePayload);
       }
     }
 
     if (updateResult.error) throw updateResult.error;
+
+    if (avatarUrlBackup) {
+      try {
+        await updateAuthUserMetadata(targetId, { avatar_url: avatarUrlBackup });
+      } catch (metadataErr) {
+        console.warn('Error guardando avatar como metadata tras update:', metadataErr);
+      }
+    }
+
     res.json(updateResult.data);
   } catch (err) {
     console.error("Error al actualizar usuario:", err);

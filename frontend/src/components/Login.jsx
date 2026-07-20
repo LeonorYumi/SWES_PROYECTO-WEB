@@ -42,9 +42,23 @@ const Login = () => {
         localStorage.setItem('uid', data.uid);
         localStorage.setItem('token', data.token);
         localStorage.setItem('role', (data.role || 'visitante').toLowerCase());
-        if (data.phone) localStorage.setItem('phone', data.phone);
+        if (data.phone) {
+          localStorage.setItem('phone', data.phone);
+        } else {
+          localStorage.removeItem('phone');
+        }
         localStorage.setItem('email', data.email || email);
         localStorage.setItem('name', data.name || '');
+        if (data.avatar_url) {
+          localStorage.setItem('avatar_url', data.avatar_url);
+        } else {
+          localStorage.removeItem('avatar_url');
+        }
+        if (data.avatar_url) {
+          localStorage.setItem('avatar_url', data.avatar_url);
+        } else {
+          localStorage.removeItem('avatar_url');
+        }
 
         const mensajeBienvenida = data.sessionMessage
           ? `${data.message} ${data.sessionMessage}`
@@ -89,6 +103,11 @@ const Login = () => {
             localStorage.setItem('role', (googleData.role || 'visitante').toLowerCase());
             localStorage.setItem('email', googleData.email || '');
             localStorage.setItem('name', googleData.name || '');
+            if (googleData.avatar_url) {
+              localStorage.setItem('avatar_url', googleData.avatar_url);
+            } else {
+              localStorage.removeItem('avatar_url');
+            }
             setMensaje({ texto: googleData.message || 'Bienvenido', tipo: 'success' });
             setTimeout(() => navigate('/dashboard'), 800);
           }
