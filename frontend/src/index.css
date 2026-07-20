@@ -23,3 +23,33 @@ input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
   display: none;
 }
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+.floating {
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes scrollCarousel {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.carousel-track {
+  animation: scrollCarousel 30s linear infinite;
+}
+
+.carousel-track:hover {
+  animation-play-state: paused;
+}

@@ -21,7 +21,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["Inter", "ui-sans-serif", "system-ui"],
+        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
       },
       borderRadius: {
         input: "0.5rem",

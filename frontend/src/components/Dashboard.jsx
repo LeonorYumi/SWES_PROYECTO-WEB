@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSearch, FaWhatsapp } from 'react-icons/fa';
+import { FaSearch, FaWhatsapp, FaShoppingCart } from 'react-icons/fa';
 import SidebarFilters from './SidebarFilters';
 import { getAll } from '../services/crudService';
 import { useCart } from '../context/CartContext';
@@ -57,22 +57,24 @@ function Dashboard() {
               className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium outline-none transition-all focus:bg-white focus:border-blue-900 focus:ring-4 focus:ring-blue-900/5"
               />
             </div>
-
-  {/* Botón Publicar: Más estilizado */}
-  {(role === 'emprendedor' || role === 'administrador') && (
-    <button 
-      onClick={() => navigate('/admin/products/new')} 
-      className="w-full sm:w-auto bg-blue-900 hover:bg-blue-950 text-white px-6 py-2.5 rounded-xl font-semibold text-sm shadow-xs transition-all duration-200 shrink-0 whitespace-nowrap"
-    >
-      Publicar Emprendimiento
-    </button>
-  )}
-</div>
+            
+            {/* Botón Publicar: Más estilizado */}
+            
+            {(role === 'emprendedor' || role === 'administrador') && (
+              <button 
+              onClick={() => navigate('/admin/products/new')} 
+              className="w-full sm:w-auto bg-blue-900 hover:bg-blue-950 text-white px-6 py-2.5 rounded-xl font-semibold text-sm shadow-xs transition-all duration-200 shrink-0 whitespace-nowrap"
+              >
+                Publicar Emprendimiento
+              </button>
+            )}
+          </div>
 
           {/* Filtros en Línea Horizontal */}
           <div className="w-full overflow-x-auto pb-2 flex gap-2 scrollbar-none snap-x">
             <SidebarFilters categoriaActiva={categoriaActiva} setCategoriaActiva={setCategoriaActiva} />
           </div>
+        
         </div>
 
           {/* SECCIÓN DE PRODUCTOS */}
@@ -87,68 +89,78 @@ function Dashboard() {
                 key={it.id} 
                 className="bg-white border border-gray-150/80 rounded-2xl p-4 shadow-3xs flex flex-col h-full group hover:-translate-y-1 hover:shadow-md transition-all duration-300"
               >
-                {/* Contenedor de la Imagen + Badge flotante */}
-                <div className="relative aspect-video w-full mb-4 overflow-hidden rounded-xl bg-gray-50 border border-gray-100/50">
-                  {it.image ? (
-                    <img 
-                      src={it.image} 
-                      alt={it.name} 
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl bg-gray-50">🖼️</div>
-                  )}
-
-                  {/* Badge de Categoría sutil sobre la imagen */}
-                  <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider rounded-md bg-white/90 text-blue-950 shadow-3xs backdrop-blur-xs">
-                    {it.category || 'General'}
+                {it.category && (
+                  <span className="inline-block mb-1.5 text-xs font-bold uppercase tracking-wide text-blue-900/70">
+                    {it.category}
                   </span>
+                )}
+
+                {/* Contenedor de la Imagen */}
+                
+                <div className="relative aspect-video w-full mb-4 overflow-hidden rounded-xl bg-gray-50 border border-gray-100/50 flex items-center justify-center">
+                {it.image ? (
+                  <img 
+                  src={it.image} 
+                  alt={it.name} 
+                  className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105" 
+                  />
+                ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl bg-gray-50">🖼️</div>
+                )}
                 </div>
 
                 <div className="flex items-start justify-between gap-3 mb-1.5">
-  <h2 className="text-base font-bold text-gray-900 group-hover:text-blue-900 transition-colors line-clamp-1 min-w-0">
-    {it.name}
-  </h2>
+                  <h2 className="text-xl font-medium text-gray-900 group-hover:text-blue-900 transition-colors line-clamp-1 min-w-0">
+                    {it.name}
+                  </h2>
+                  
+                  <p className="shrink-0 text-black font-sans text-xl tracking-tight leading-none">
+                    <span className="text-sm font-bold">$</span>
+                    {Number(it.price).toFixed(2)}
+                  </p>
 
-  <p className="text-gray-900 font-semibold text-[17px] tracking-tight shrink-0">
-    <span className="text-xs font-normal text-gray-500 mr-0.5">US</span>${it.price}
-  </p>
-</div>
+                </div>
 
                 {/* Descripción Corta */}
-                <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-4">
+                <p className="text-[13px] text-gray-600 line-clamp-2 leading-relaxed mb-4 font-sans">
                   {it.description || 'Sin descripción disponible.'}
                 </p>
 
-                {/* Botón de ver más información */}
-                <div className="mb-4 flex flex-col gap-2">
+                {/* Acciones */}
+                <div className="mb-4 flex items-center gap-2">
                   <button
-                    type="button"
-                    onClick={() => navigate(`/emprendimientos/${it.id}`)}
-                    className="inline-flex items-center justify-center rounded-xl bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 text-xs font-semibold transition-colors duration-200 shadow-sm"
+                  type="button"
+                  onClick={() => navigate(`/emprendimientos/${it.id}`)}
+                  className="flex-1 inline-flex items-center justify-center rounded-xl bg-blue-900 hover:bg-blue-950 text-white px-4 py-2.5 text-xs font-semibold transition-colors duration-200 shadow-sm whitespace-nowrap"
                   >
                     Ver más información
                   </button>
+                  
                   <button
-                    type="button"
-                    onClick={() => addItem(it)}
-                    className="inline-flex items-center justify-center rounded-xl border border-blue-900 text-blue-900 px-4 py-2 text-xs font-semibold transition-colors duration-200 hover:bg-blue-50"
+                  type="button"
+                  onClick={() => addItem(it)}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-blue-900 text-blue-900 px-4 py-2.5 text-xs font-semibold transition-colors duration-200 hover:bg-blue-900 hover:text-white whitespace-nowrap"
                   >
+                    <FaShoppingCart size={12} />
                     Agregar al carrito
                   </button>
                 </div>
+                
 
                 {/* Contenedor Inferior Dinámico (Empujado al fondo) */}
+
                 <div className="mt-auto">
-                  <div className="pt-3 border-t border-gray-100 mb-3 flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-bold text-[11px] flex items-center justify-center uppercase shrink-0">
+                  <div className="pt-4 border-t border-gray-100 mb-3 flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center uppercase shrink-0">
                       {(it.sellerName || it.sellername || 'V').substring(0, 2)}
                     </div>
+                    
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-gray-800 truncate">
+                      <p className="text-sm font-semibold text-gray-800 truncate">
                         {it.sellerName || it.sellername || 'Anónimo'}
                       </p>
-                      <p className="text-[10px] text-gray-400 font-medium truncate">
+                      
+                      <p className="text-xs text-gray-400 font-medium truncate">
                         Tel: {it.sellerPhone || it.sellerphone || 'No asignado'}
                       </p>
                     </div>

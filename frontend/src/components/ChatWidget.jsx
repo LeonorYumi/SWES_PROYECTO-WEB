@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { FiMessageCircle, FiX, FiSend } from "react-icons/fi";
+import { FaRobot } from "react-icons/fa";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:9000/api";
 
@@ -76,17 +78,11 @@ export default function ChatWidget() {
       {/* Botón flotante */}
 
       <button
-        onClick={() => setOpen(!open)}
-        className="
-          fixed bottom-5 right-5
-          bg-blue-600 text-white
-          rounded-full
-          w-14 h-14
-          text-2xl
-          shadow-lg
-        "
+      onClick={() => setOpen(!open)}
+      aria-label="Abrir chat"
+      className="fixed bottom-5 right-5 z-40 bg-blue-900 hover:bg-blue-950 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg transition-colors"
       >
-        💬
+        {open ? <FiX size={22} /> : <FiMessageCircle size={22} />}
       </button>
 
 
@@ -94,27 +90,11 @@ export default function ChatWidget() {
       {
         open && (
 
-          <div
-            className="
-              fixed bottom-24 right-5
-              w-96 h-[500px]
-              bg-white
-              rounded-xl
-              shadow-xl
-              border
-              flex flex-col
-            "
-          >
+          <div className="fixed bottom-24 right-5 z-40 w-[90vw] max-w-96 h-[500px] max-h-[65vh] bg-white rounded-xl shadow-xl border flex flex-col overflow-hidden">
 
-            <div
-              className="
-                bg-blue-600
-                text-white
-                p-4
-                rounded-t-xl
-              "
-            >
-              🤖 SWES Assistant
+            <div className=" bg-blue-900 text-white p-4 flex items-center gap-2 shink-0">
+              <FaRobot size={17} />
+              <span className="font-semibold text-sm">Asistente SWES</span>
             </div>
 
 
@@ -143,15 +123,14 @@ export default function ChatWidget() {
                   >
 
                     <span
-                      className="
-                        inline-block
-                        p-2
-                        rounded-lg
-                        bg-gray-100
-                      "
-                    >
-                      {msg.content}
-                    </span>
+  className={`inline-block px-3 py-2 rounded-2xl text-sm max-w-[85%] whitespace-pre-line ${
+    msg.role === "user"
+      ? "bg-blue-900 text-white rounded-br-sm"
+      : "bg-gray-100 text-gray-800 rounded-bl-sm"
+  }`}
+>
+  {msg.content}
+</span>
 
                   </div>
 

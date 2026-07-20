@@ -72,24 +72,26 @@ function ProductGalleryCarousel({ productId, fallbackImage }) {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="relative w-full overflow-hidden rounded-3xl bg-gray-100" style={{ maxHeight: 520 }}>
+    <div className="space-y-2">
+      <div className="relative h-[320px] w-full rounded-2xl border border-gray-200 bg-white overflow-hidden" >
         {loading ? (
           <div className="flex h-full items-center justify-center text-gray-500">Cargando imágenes...</div>
         ) : currentImage ? (
           <>
-            <img
+            <div className="flex h-full items-center justify-center p-4">
+              <img
               src={currentImage}
-              alt={hasImages ? `Galería ${selected + 1}` : 'Imagen del producto'}
-              className="w-full h-full object-contain bg-white"
-              style={{ maxHeight: 520, margin: '0 auto' }}
-            />
+              alt={`Galería ${selected + 1}`}
+              className="max-h-full max-w-full object-contain transition duration-300"
+              />
+            </div>
+
             {uniqueImages.length > 1 && (
               <>
                 <button
                   type="button"
                   onClick={goPrevious}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/85 p-3 shadow-lg text-gray-700 hover:bg-white"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center hover:bg-gray-100"
                   aria-label="Imagen anterior"
                 >
                   ‹
@@ -97,7 +99,7 @@ function ProductGalleryCarousel({ productId, fallbackImage }) {
                 <button
                   type="button"
                   onClick={goNext}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/85 p-3 shadow-lg text-gray-700 hover:bg-white"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center hover:bg-gray-100"
                   aria-label="Siguiente imagen"
                 >
                   ›
@@ -124,18 +126,26 @@ function ProductGalleryCarousel({ productId, fallbackImage }) {
           <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
             Galería ({uniqueImages.length} imagen{uniqueImages.length > 1 ? 'es' : ''})
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-1">
-            {uniqueImages.map((img, index) => (
-              <button
-                key={img.id || `${img.image_url}-${index}`}
-                type="button"
-                onClick={() => setSelected(index)}
-                className={`min-w-[100px] overflow-hidden rounded-2xl border ${selected === index ? 'border-blue-900 ring-2 ring-blue-200' : 'border-gray-200'} transition-all shrink-0`}
-              >
-                <img src={img.image_url} alt={`Miniatura ${index + 1}`} className="h-24 w-full object-cover" />
-              </button>
-            ))}
+          
+          <div className="w-full overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-gray-100">
+            <div className="flex gap-2.5 pb-2">
+              {uniqueImages.map((img, index) => (
+                <button
+                  key={img.id || `${img.image_url}-${index}`}
+                  type="button"
+                  onClick={() => setSelected(index)}
+                  className={`min-w-[76px] w-[76px] overflow-hidden rounded-xl border-2 transition-all shrink-0 ${
+                    selected === index
+                      ? 'border-blue-900 opacity-100'
+                      : 'border-transparent opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img.image_url} alt={`Miniatura ${index + 1}`} className="h-16 w-full object-cover rounded-lg" />
+                </button>
+              ))}
+            </div>
           </div>
+
         </div>
       )}
     </div>

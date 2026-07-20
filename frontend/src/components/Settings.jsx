@@ -101,7 +101,7 @@ function Settings() {
             <button
               type="button"
               onClick={() => setMostrarFormulario(true)}
-              className="w-full rounded-xl bg-blue-900 px-6 py-3 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-blue-800 transition-all duration-200"
+              className="inline-flex items-center justify-center rounded-xl bg-blue-900 px-6 py-3 text-xs font-medium uppercase tracking-wider text-white shadow-sm hover:bg-blue-800 transition-all duration-200"
             >
               Cambiar contraseña
             </button>

@@ -3,7 +3,6 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 
-// ✅ PERSISTENCIA: Archivo JSON para guardar mensajes
 const MESSAGES_FILE = path.join(__dirname, '../data/chat_messages.json');
 
 // Crear carpeta si no existe

@@ -188,7 +188,7 @@ export default function AdminUsers() {
         </div>
       )}
 
-      <h2 className="text-2xl font-bold mb-4">Usuarios</h2>
+      <h2 className="text-2xl font-bold mb-4 text-gray-900">Usuarios</h2>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -207,7 +207,7 @@ export default function AdminUsers() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setCrearNuevo(true)}
-            className="px-4 py-3 rounded-xl bg-brand-primary text-white text-sm font-semibold hover:bg-brand-hover transition flex items-center gap-2"
+            className="px-4 py-3 rounded-xl bg-blue-900 hover:bg-blue-950 text-white text-sm font-semibold transition flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Crear nuevo usuario
@@ -240,13 +240,13 @@ export default function AdminUsers() {
               <div className="flex gap-2 mt-1">
                 <button
                   onClick={() => handleEditClick(u)}
-                  className="flex-1 px-3 py-2 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition"
+                  className="flex-1 px-3 py-2 rounded-xl border border-blue-900/20 bg-blue-50 text-blue-900 text-xs font-semibold hover:bg-blue-100 transition"
                 >
                   Editar
                 </button>
                 <button
                   onClick={() => handleDeleteClick(u.id)}
-                  className="flex-1 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-red-700 text-xs font-semibold hover:bg-red-100 transition"
+                  className="flex-1 px-3 py-2 rounded-xl border border-red-900/20 bg-red-50 text-red-900 text-xs font-semibold hover:bg-red-100 transition"
                 >
                   Eliminar
                 </button>
@@ -278,13 +278,13 @@ export default function AdminUsers() {
                 <td className="p-3 text-sm flex gap-2 flex-wrap">
                   <button
                     onClick={() => handleEditClick(u)}
-                    className="px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition"
+                    className="px-3 py-1.5 rounded-xl border border-blue-900/20 bg-blue-50 text-blue-900 text-xs font-semibold hover:bg-blue-100 transition"
                   >
                     Editar
                   </button>
                   <button
                     onClick={() => handleDeleteClick(u.id)}
-                    className="px-3 py-1.5 rounded-xl border border-red-200 bg-red-50 text-red-700 text-xs font-semibold hover:bg-red-100 transition"
+                    className="px-3 py-1.5 rounded-xl border border-red-900/20 bg-red-50 text-red-900 text-xs font-semibold hover:bg-red-100 transition"
                   >
                     Eliminar
                   </button>
@@ -296,12 +296,43 @@ export default function AdminUsers() {
       </div>
 
       {/* PAGINACIÓN */}
-      <div className="mt-4 flex items-center justify-between">
-        <div className="text-sm text-gray-600">Mostrando {Math.min(filtered.length, (currentPage-1)*pageSize+1)} - {Math.min(filtered.length, currentPage*pageSize)} de {filtered.length} usuarios</div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setPage((p)=>Math.max(1,p-1))} className="px-3 py-1 rounded border">Anterior</button>
-          <div className="text-sm px-3">{currentPage} / {totalPages}</div>
-          <button onClick={() => setPage((p)=>Math.min(totalPages,p+1))} className="px-3 py-1 rounded border">Siguiente</button>
+      <div className="mt-6 flex flex-col items-center gap-4">
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage(Math.max(1, page - 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            Anterior
+          </button>
+
+          <div className="flex gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                onClick={() => setPage(pageNum)}
+                className={`w-10 h-10 rounded-lg font-semibold text-sm transition ${
+                  currentPage === pageNum
+                    ? 'bg-blue-900 text-white'
+                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setPage(Math.min(totalPages, page + 1))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            Siguiente
+          </button>
+        </div>
+
+        <div className="text-center text-xs text-gray-500">
+          Mostrando {Math.min(filtered.length, (currentPage-1)*pageSize+1)} - {Math.min(filtered.length, currentPage*pageSize)} de {filtered.length} usuarios
         </div>
       </div>
 

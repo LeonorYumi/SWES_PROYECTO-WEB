@@ -17,6 +17,8 @@ function AdminProducts() {
   const [error, setError] = useState(null);
   const [toast, setToast] = useState({ mostrar: false, texto: '', tipo: '' });
   const [modalEliminar, setModalEliminar] = useState({ abierto: false, productoId: null });
+  const [paginaActual, setPaginaActual] = useState(1);
+  const ITEMS_POR_PAGINA = 4;
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,6 +56,7 @@ function AdminProducts() {
       }
 
       setProducts(data || []);
+      setPaginaActual(1);
 
     } catch (err) {
       console.error('Error al cargar productos:', err);
@@ -191,8 +194,18 @@ function AdminProducts() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
-            {products.map((p) => (
+          <>
+            {/* PRODUCTOS CON PAGINACIÓN */}
+            {(() => {
+              const totalPaginas = Math.ceil(products.length / ITEMS_POR_PAGINA);
+              const indiceInicio = (paginaActual - 1) * ITEMS_POR_PAGINA;
+              const indiceFin = indiceInicio + ITEMS_POR_PAGINA;
+              const productosEnPagina = products.slice(indiceInicio, indiceFin);
+
+              return (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 w-full mb-8">
+                    {productosEnPagina.map((p) => (
               <div 
                 key={p.id} 
                 className="bg-white border border-gray-100/60 rounded-3xl p-5 shadow-[0_8px_30px_rgba(0,0,0,0.015)] flex flex-col h-full group hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] transition-all duration-300"
@@ -264,8 +277,53 @@ function AdminProducts() {
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+                    ))}
+                  </div>
+
+                  {/* CONTROLES DE PAGINACIÓN */}
+                  {totalPaginas > 1 && (
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => setPaginaActual(Math.max(1, paginaActual - 1))}
+                        disabled={paginaActual === 1}
+                        className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      >
+                        Anterior
+                      </button>
+
+                      <div className="flex gap-1">
+                        {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((pagina) => (
+                          <button
+                            key={pagina}
+                            onClick={() => setPaginaActual(pagina)}
+                            className={`w-10 h-10 rounded-lg font-semibold text-sm transition ${
+                              paginaActual === pagina
+                                ? 'bg-blue-900 text-white'
+                                : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            {pagina}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => setPaginaActual(Math.min(totalPaginas, paginaActual + 1))}
+                        disabled={paginaActual === totalPaginas}
+                        className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      >
+                        Siguiente
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="text-center text-xs text-gray-500 mt-4">
+                    Mostrando {indiceInicio + 1} - {Math.min(indiceFin, products.length)} de {products.length} productos
+                  </div>
+                </>
+              );
+            })()}
+          </>
         )}
       </div>
     </div>

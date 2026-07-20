@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FiUsers, FiPackage, FiDollarSign, FiTrendingUp } from 'react-icons/fi';
+import { FaTrophy, FaMedal } from 'react-icons/fa';
 import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, Title, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 
@@ -46,20 +47,20 @@ export default function AdminStats() {
   const animAvg = Number(parseFloat(safeStats.avgPrice) || 0);
 
   const formatCurrency = (value, digits = 0) =>
-    new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: digits,
-    }).format(value);
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: digits,
+  }).format(value);
 
   if (loading) return <div className="p-6">Cargando métricas...</div>;
   if (!stats) return <div className="p-6">No hay métricas disponibles.</div>;
 
   const cards = [
-    { id: 'users', title: 'Usuarios registrados', value: animUsers.toLocaleString('es-ES'), icon: <FiUsers className="w-6 h-6 text-[#0f766e]" /> },
-    { id: 'products', title: 'Publicaciones activas', value: animProducts.toLocaleString('es-ES'), icon: <FiPackage className="w-6 h-6 text-[#ea580c]" /> },
-    { id: 'value', title: 'Valor del catálogo', value: formatCurrency(animValue), icon: <FiDollarSign className="w-6 h-6 text-[#2563eb]" /> },
-    { id: 'avg', title: 'Precio promedio', value: formatCurrency(animAvg, 2), icon: <FiTrendingUp className="w-6 h-6 text-[#7c3aed]" /> },
+  { id: 'users', title: 'Usuarios registrados', value: animUsers.toLocaleString('es-ES'), icon: <FiUsers className="w-6 h-6 text-[#0f766e]" />, bg: 'bg-teal-50' },
+  { id: 'products', title: 'Publicaciones activas', value: animProducts.toLocaleString('es-ES'), icon: <FiPackage className="w-6 h-6 text-[#ea580c]" />, bg: 'bg-orange-50' },
+  { id: 'value', title: 'Valor del catálogo', value: formatCurrency(animValue), icon: <FiDollarSign className="w-6 h-6 text-[#2563eb]" />, bg: 'bg-blue-50' },
+  { id: 'avg', title: 'Precio promedio', value: formatCurrency(animAvg, 2), icon: <FiTrendingUp className="w-6 h-6 text-[#7c3aed]" />, bg: 'bg-violet-50' },
   ];
 
   const categoryEntries = Object.entries(safeStats.productsByCategory || {}).map(([category, count], index) => ({
@@ -92,11 +93,11 @@ export default function AdminStats() {
       <h2 className="text-2xl font-bold mb-4">Estadísticas Administrativas</h2>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
         {cards.map((c) => (
-          <div key={c.id} className="p-5 bg-white rounded-3xl shadow-[0_18px_50px_rgba(15,23,42,0.04)] border border-slate-100 flex items-center gap-4 hover:shadow-[0_20px_60px_rgba(15,23,42,0.06)] transition-shadow duration-300">
-            <div className="p-3 rounded-2xl bg-slate-50 ring-1 ring-slate-200">{c.icon}</div>
+          <div key={c.id} className="p-5 bg-white rounded-3xl shadow-[0_18px_50px_rgba(15,23,42,0.04)] border border-slate-100 flex items-center gap-4 hover:shadow-[0_20px_60px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 transition-all duration-300">
+            <div className={`p-3 rounded-2xl ${c.bg}`}>{c.icon}</div>
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.16em] text-slate-400 mb-1">{c.title}</p>
-              <p className="text-3xl font-semibold text-slate-900">{c.value}</p>
+              <p className="text-3xl font-medium text-slate-900">{c.value}</p>
             </div>
           </div>
         ))}
@@ -110,7 +111,7 @@ export default function AdminStats() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
           <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 p-6">
             <div className="flex items-center justify-between gap-4 mb-4">
               <div>
@@ -194,17 +195,37 @@ export default function AdminStats() {
               {formattedSellers.length === 0 ? (
                 <div className="rounded-2xl bg-slate-50 p-4 text-slate-400">No hay datos</div>
               ) : (
-                formattedSellers.map((seller) => (
-                  <div key={seller.id} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-slate-900">{seller.label}</p>
-                      <p className="text-xs text-slate-500 mt-1">Productos: {seller.products}</p>
+                formattedSellers.map((seller) => {
+                    const medalColors = ['text-amber-500', 'text-slate-400', 'text-orange-700'];
+                  const isTop3 = seller.rank <= 3;
+                  return (
+                  <div
+                  key={seller.id}
+                  className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition-colors ${
+                    seller.rank === 1
+                    ? 'border-amber-200 bg-amber-50/60'
+                    : 'border-slate-200 bg-slate-50'
+                  }`}
+                  >
+                    <div className="w-9 h-9 shrink-0 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                      {seller.rank === 1 ? (
+                        <FaTrophy className={`w-4 h-4 ${medalColors[0]}`} />
+                      ) : isTop3 ? (
+                      <FaMedal className={`w-4 h-4 ${medalColors[seller.rank - 1]}`} />
+                    ) : (
+                    <span className="text-sm font-bold text-slate-700">#{seller.rank}</span>
+                    )}
                     </div>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">#{seller.rank}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-slate-900">{seller.label}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{seller.products} producto{seller.products === 1 ? '' : 's'}</p>
+                    </div>
+                  
                   </div>
-                ))
-              )}
-            </div>
+                  );
+                })
+                )}
+              </div>
 
             <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Usuarios por rol</p>

@@ -76,80 +76,129 @@ function EmprendimientoDetalle() {
         </button>
 
         {/* Layout de 2 columnas: producto + espacio para chat */}
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_390px] gap-8 items-start">
 
-          {/* COLUMNA PRINCIPAL: info del producto */}
-          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">
-
-            {/* Carrusel de galería de imágenes */}
-            <ProductGalleryCarousel productId={item.id} fallbackImage={item.image || ''} />
-            <span className="mt-4 inline-flex rounded-full bg-white/95 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-950 shadow-sm">
-              {item.category || 'General'}
-            </span>
-
-            {/* Título y precio */}
-            <div className="flex items-start justify-between gap-4 mb-3">
-              <h1 className="text-2xl font-bold text-gray-900 leading-tight">{item.name}</h1>
-              <p className="text-gray-900 font-bold text-2xl tracking-tight shrink-0">
-                <span className="text-sm font-normal text-gray-500 mr-1">US</span>
-                ${item.price}
-              </p>
-            </div>
-
-            <p className="text-gray-600 text-sm leading-relaxed mb-6">
-              {item.description || 'Sin descripción disponible.'}
-            </p>
-
-            {/* Vendedor + botón de WhatsApp junto al nombre */}
-            <div className="flex items-center justify-between gap-3 py-5 border-y border-gray-100 mb-6">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="h-11 w-11 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center uppercase shrink-0">
-                  {(item.sellerName || item.sellername || 'V').substring(0, 2)}
+          
+          {/* COLUMNA PRINCIPAL */}
+          
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            
+            <div className="grid lg:grid-cols-2 gap-10">
+              
+              {/* GALERÍA  */}
+              
+              <div>
+                <div className="rounded-2xl overflow-visible p-4">
+                  <ProductGalleryCarousel
+                  productId={item.id}
+                  fallbackImage={item.image || ''}
+                  />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">
-                      {item.sellerName || item.sellername || 'Anónimo'}
-                    </p>
-                    <a
-                      href={urlWhatsApp}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`Contactar por WhatsApp a ${item.sellerName || item.sellername || 'el vendedor'}`}
-                      className="inline-flex items-center gap-2 rounded-lg bg-blue-900 hover:bg-blue-950 text-white px-3.5 py-2 text-xs font-semibold shadow-sm transition-colors shrink-0"
-                    >
-                      <FaWhatsapp className="text-[11px]" />
-                      Contactar por WhatsApp
-                    </a>
-                  </div>
-                  <p className="text-xs text-gray-400 font-medium truncate">
-                    Tel: {telefono || 'No asignado'}
-                  </p>
+                
+            </div>
+            
+            {/* INFORMACIÓN */}
+            
+            <div className="flex flex-col">
+              
+              <span className="inline-flex w-fit rounded-full bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-blue-900 mb-4">
+                {item.category || "General"}
+              </span>
+              
+              <div className="flex items-start justify-between gap-4 mb-6">
+                <h1 className="text-[20px] font-medium text-gray-900 flex-1">
+                  {item.name}
+                </h1>
+                <div className="text-right">
+                  
+                  <h2 className="text-[20px] font-medium text-blue-900">
+                    ${item.price}
+                  </h2>
                 </div>
               </div>
+              
+              <div className="border rounded-xl p-5 mb-6 text-sm">
+                <h3 className="font-semibold text-gray-800 mb-2">
+                    Descripción
+                </h3>
+                <p className="text-gray-600 leading-relaxed text-[15px]">
+                    {item.description || "Sin descripción disponible."}
+                </p>
+              </div>
+
+            {/* VENDEDOR */}
+
+            <div className="border rounded-xl p-5 mb-6">
+
+                <h3 className="font-semibold mb-4 text-sm">
+                    Información del vendedor
+                </h3>
+
+                <div className="flex items-center gap-4">
+
+                    <div className="w-14 h-14 rounded-full bg-slate-100 border flex items-center justify-center font-medium text-sm">
+
+                        {(item.sellerName || item.sellername || "V").substring(0,2)}
+
+                    </div>
+
+                    <div className="flex-1">
+
+                        <p className="font-medium text-sm">
+
+                            {item.sellerName || item.sellername || "Anónimo"}
+
+                        </p>
+
+                        <p className="text-[12px] text-gray-500">
+
+                            {telefono || "No asignado"}
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <a
+                    href={urlWhatsApp}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-5 w-full flex justify-center items-center gap-2 rounded-xl bg-green-600 hover:bg-green-700 text-white py-2.5 text-sm font-semibold transition"
+                >
+                    <FaWhatsapp />
+                    Contactar por WhatsApp
+                </a>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 mb-5">
-              <button
-                type="button"
-                onClick={() => addItem(item)}
-                className="inline-flex items-center justify-center rounded-xl border border-blue-900 px-4 py-2 text-sm font-semibold text-blue-900 hover:bg-blue-50"
-              >
-                Agregar al carrito
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/carrito')}
-                className="inline-flex items-center justify-center rounded-xl bg-blue-900 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-950"
-              >
-                Ver carrito
-              </button>
+            {/* BOTONES */}
+
+            <div className="grid grid-cols-2 gap-3">
+
+                <button
+                    onClick={() => addItem(item)}
+                    className="rounded-xl border-2 border-blue-900 py-2.5 text-sm font-semibold text-blue-900 hover:bg-blue-50 transition-colors"
+                >
+                    Agregar al carrito
+                </button>
+
+                <button
+                    onClick={() => navigate("/carrito")}
+                    className="rounded-xl bg-blue-900 py-2.5 text-sm font-semibold text-white hover:bg-blue-950 transition-colors"
+                >
+                    Ver carrito
+                </button>
+
             </div>
 
-          </div>
+        </div>
+
+    </div>
+
+</div>
 
           {/* COLUMNA LATERAL: chat en vivo con el emprendedor */}
-          <div className="lg:col-span-1 bg-white border border-gray-100 rounded-2xl shadow-sm flex flex-col overflow-hidden min-h-[520px] lg:min-h-[620px] lg:sticky lg:top-6 h-full">
+          <div className="flex flex-col bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden sticky top-6 h-[calc(100vh-8rem)] max-h-[600px]">
             <ChatRoom
               roomId={item.id}
               sellerName={item.sellerName || item.sellername || 'Emprendedor'}
