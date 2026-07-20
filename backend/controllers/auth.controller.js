@@ -35,13 +35,17 @@ const findAuthUserByEmail = async (email) => {
 
 const register = async (req, res) => {
   try {
+    console.log('REGISTER START', { body: req.body });
     const { email, password, nombre, role, phone } = req.body;
     const normalEmail = normalizeEmail(email);
     const normalPhone = normalizePhone(phone);
     const selectedRole = role || getRoleByEmail(normalEmail) || "visitante";
 
     const validation = validateUserInput(normalEmail, password, nombre);
-    if (validation) return res.status(400).json({ message: validation });
+    if (validation) {
+      console.log('REGISTER VALIDATION FAILED', validation);
+      return res.status(400).json({ message: validation });
+    }
     if (selectedRole === "emprendedor" && !normalEmail.endsWith("@epn.edu.ec")) {
       return res.status(400).json({ message: "El correo debe ser institucional @epn.edu.ec para emprendedor" });
     }
@@ -52,12 +56,16 @@ const register = async (req, res) => {
       return res.status(403).json({ message: "No puedes registrar administradores" });
     }
 
-    const createUserFn = process.env.SUPABASE_SERVICE_ROLE_KEY ? supabaseService.auth.admin.createUser : supabaseAnon.auth.signUp;
+    const createUserFn = process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? supabaseService.auth.admin.createUser.bind(supabaseService.auth.admin)
+      : supabaseAnon.auth.signUp.bind(supabaseAnon.auth);
     const userOpts = process.env.SUPABASE_SERVICE_ROLE_KEY
       ? { email: normalEmail, password, email_confirm: true, user_metadata: { nombre, role: selectedRole, phone: normalPhone } }
-      : { email: normalEmail, password, options: { data: { nombre, role: selectedRole, phone: normalPhone }, emailRedirectTo: buildFrontendUrl(FRONTEND_VERIFY_URL, "", req) } };
+      : [{ email: normalEmail, password }, { data: { nombre, role: selectedRole, phone: normalPhone }, emailRedirectTo: buildFrontendUrl(FRONTEND_VERIFY_URL, "", req) }];
 
-    const { data, error } = process.env.SUPABASE_SERVICE_ROLE_KEY ? await createUserFn(userOpts) : await createUserFn(userOpts[0], userOpts[1]);
+    const { data, error } = process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? await createUserFn(userOpts)
+      : await createUserFn(userOpts[0], userOpts[1]);
     if (error) return res.status(500).json({ message: "Error al registrar usuario", detail: error.message });
 
     const userId = data.user?.id;

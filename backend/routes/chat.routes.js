@@ -62,6 +62,13 @@ function getRoomMessages(roomId) {
   return [...roomMessages].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 }
 
+const resolveRoomId = (req, roomIdParam) => {
+  const roomIdFromPath = String(roomIdParam || '').trim();
+  const roomIdFromBody = String(req.body?.roomId || '').trim();
+  const roomIdFromQuery = String(req.query?.roomId || '').trim();
+  return roomIdFromPath || roomIdFromBody || roomIdFromQuery;
+};
+
 function createMessageInRoom({ roomId, senderId, senderName, content, receiverId }) {
   console.log('\n' + '='.repeat(60));
   console.log('📨 NUEVO MENSAJE RECIBIDO');
@@ -75,18 +82,25 @@ function createMessageInRoom({ roomId, senderId, senderName, content, receiverId
     timestamp: new Date().toISOString(),
   });
 
-  if (!roomId || !content || !content.trim()) {
-    console.log('❌ RECHAZADO: roomId o contenido vacío');
-    return null;
-  }
-
-  if (!senderId || !receiverId) {
-    console.log('❌ RECHAZADO: senderId o receiverId faltantes');
-    return null;
-  }
-
+  const roomIdClean = String(roomId || '').trim();
+  const messageText = String(content || '').trim();
   const senderIdClean = normalizeId(senderId);
   const receiverIdClean = normalizeId(receiverId);
+
+  if (!roomIdClean) {
+    console.log('❌ RECHAZADO: roomId inválido o faltante');
+    return { error: 'INVALID_ROOM', message: 'El identificador de sala es obligatorio.' };
+  }
+
+  if (!messageText) {
+    console.log('❌ RECHAZADO: contenido vacío');
+    return { error: 'INVALID_CONTENT', message: 'El contenido del mensaje no puede estar vacío.' };
+  }
+
+  if (!senderIdClean || !receiverIdClean) {
+    console.log('❌ RECHAZADO: senderId o receiverId faltantes', { senderIdClean, receiverIdClean });
+    return { error: 'INVALID_PARTICIPANTS', message: 'El remitente y el destinatario son obligatorios.' };
+  }
 
   if (senderIdClean === receiverIdClean) {
     console.log('❌ BLOQUEADO: Auto-mensaje detectado');
@@ -199,12 +213,14 @@ router.get('/:roomId/messages', (req, res) => {
 });
 
 router.post('/:roomId/messages', (req, res) => {
-  const { roomId } = req.params;
+  const roomId = resolveRoomId(req, req.params.roomId);
   const message = createMessageInRoom({ roomId, ...req.body });
 
   if (!message || message.error) {
-    return res.status(message?.error === 'SELF_MESSAGE_BLOCKED' ? 403 : 400).json({
-      message: message?.message || 'El mensaje no puede estar vacío.',
+    const status = message?.error === 'SELF_MESSAGE_BLOCKED' ? 403 : ['INVALID_PARTICIPANTS', 'INVALID_ROOM', 'INVALID_CONTENT'].includes(message?.error) ? 400 : 500;
+    console.log('❌ POST /chat/:roomId/messages falla:', { status, message });
+    return res.status(status).json({
+      message: message?.message || 'El mensaje no puede ser procesado.',
       error: message?.error || 'INVALID_MESSAGE',
     });
   }
