@@ -6,7 +6,7 @@ import { Trash2, ArrowLeft, Plus, Minus, Check } from 'lucide-react';
 
 function CartPage() {
   const navigate = useNavigate();
-  const { items, removeItem, updateQuantity, clearCart, totalPrice } = useCart();
+  const { items, removeItem, updateQuantity, clearCart, totalPrice, totalItems } = useCart();
   const [pagoExitoso, setPagoExitoso] = useState(false);
   const [errorPago, setErrorPago] = useState(false);
   const uid = localStorage.getItem('uid');
@@ -154,7 +154,7 @@ function CartPage() {
               <div className="space-y-3 text-sm text-gray-600">
                 <div className="flex items-center justify-between">
                   <span>Total de productos</span>
-                  <span className="font-medium text-gray-800">{items.length}</span>
+                  <span className="font-medium text-gray-800">{totalItems}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Subtotal</span>

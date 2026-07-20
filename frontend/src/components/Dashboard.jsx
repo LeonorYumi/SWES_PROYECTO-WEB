@@ -11,7 +11,7 @@ function Dashboard() {
   const [categoriaActiva, setCategoriaActiva] = useState('todas');
   const [busqueda, setBusqueda] = useState('');
   const navigate = useNavigate();
-  const { addItem } = useCart();
+  const { addItem, loading: cartLoading } = useCart();
 
   const role = localStorage.getItem('role') || 'visitante';
   const uid = localStorage.getItem('uid');
@@ -138,11 +138,12 @@ function Dashboard() {
                   
                   <button
                   type="button"
+                  disabled={cartLoading}
                   onClick={() => addItem(it)}
-                  className="w-full sm:flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-blue-900 text-blue-900 px-3 py-2.5 text-xs font-semibold transition-colors duration-200 hover:bg-blue-900 hover:text-white"
+                  className="w-full sm:flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-blue-900 text-blue-900 px-3 py-2.5 text-xs font-semibold transition-colors duration-200 hover:bg-blue-900 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-blue-900"
                   >
                     <FaShoppingCart size={12} />
-                    <span>Agregar al carrito</span>
+                    <span>{cartLoading ? 'Cargando...' : 'Agregar al carrito'}</span>
                   </button>
                 </div>
                 

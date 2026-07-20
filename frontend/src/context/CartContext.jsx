@@ -9,6 +9,8 @@ export function CartProvider({ children }) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   useEffect(() => {
+    let cancelado = false; // guard: evita que una respuesta vieja pise cambios posteriores
+
     const loadCart = async () => {
       if (!userId || !token) {
         setItems([]);
@@ -29,16 +31,22 @@ export function CartProvider({ children }) {
         }
 
         const data = await res.json();
-        setItems(Array.isArray(data) ? data : []);
+        if (!cancelado) {
+          setItems(Array.isArray(data) ? data : []);
+        }
       } catch (error) {
         console.error('No se pudo cargar el carrito:', error);
-        setItems([]);
+        if (!cancelado) setItems([]);
       } finally {
-        setLoading(false);
+        if (!cancelado) setLoading(false);
       }
     };
 
     loadCart();
+
+    return () => {
+      cancelado = true;
+    };
   }, [userId, token]);
 
   const syncCart = async (nextItems) => {
@@ -93,11 +101,13 @@ export function CartProvider({ children }) {
       ];
     })();
 
+    setItems(nextItems); // actualiza el estado local de inmediato (feedback instantáneo)
     syncCart(nextItems);
   };
 
   const removeItem = (id) => {
     const nextItems = items.filter((item) => item.id !== id);
+    setItems(nextItems);
     syncCart(nextItems);
   };
 
@@ -110,6 +120,7 @@ export function CartProvider({ children }) {
       return items.map((item) => (item.id === id ? { ...item, quantity } : item));
     })();
 
+    setItems(nextItems);
     syncCart(nextItems);
   };
 

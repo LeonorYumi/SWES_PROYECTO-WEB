@@ -1,36 +1,11 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const { verifyToken } = require('../middleware/authMiddleware');
 
+// Cliente de Supabase con permisos de administrador (SERVICE_ROLE_KEY),
+// ya configurado en backend/supabase.js
+const { supabaseAdmin: supabase } = require('../supabase');
+
 const router = express.Router();
-const cartsFilePath = path.join(__dirname, '..', 'data', 'carts.json');
-
-const ensureStoreFile = () => {
-  const dir = path.dirname(cartsFilePath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-
-  if (!fs.existsSync(cartsFilePath)) {
-    fs.writeFileSync(cartsFilePath, '{}', 'utf8');
-  }
-};
-
-const readCarts = () => {
-  ensureStoreFile();
-  try {
-    return JSON.parse(fs.readFileSync(cartsFilePath, 'utf8'));
-  } catch (error) {
-    console.error('No se pudo leer el archivo de carritos:', error);
-    return {};
-  }
-};
-
-const writeCarts = (carts) => {
-  ensureStoreFile();
-  fs.writeFileSync(cartsFilePath, JSON.stringify(carts, null, 2), 'utf8');
-};
 
 const normalizeItems = (items) => {
   if (!Array.isArray(items)) return [];
@@ -48,22 +23,43 @@ const normalizeItems = (items) => {
     }));
 };
 
-router.get('/cart', verifyToken, (req, res) => {
+// GET /cart - obtener el carrito del usuario autenticado
+router.get('/cart', verifyToken, async (req, res) => {
   try {
-    const carts = readCarts();
-    res.json(carts[req.user.uid] || []);
+    const { data, error } = await supabase
+      .from('carts')
+      .select('items')
+      .eq('user_id', req.user.uid)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    // Si el usuario no tiene fila todavía, devolvemos carrito vacío
+    res.json(data?.items || []);
   } catch (error) {
     console.error('Error obteniendo carrito:', error);
     res.status(500).json({ message: 'No se pudo cargar el carrito' });
   }
 });
 
-router.put('/cart', verifyToken, (req, res) => {
+// PUT /cart - guardar/reemplazar el carrito del usuario autenticado
+router.put('/cart', verifyToken, async (req, res) => {
   try {
     const items = normalizeItems(req.body?.items);
-    const carts = readCarts();
-    carts[req.user.uid] = items;
-    writeCarts(carts);
+
+    const { error } = await supabase
+      .from('carts')
+      .upsert(
+        {
+          user_id: req.user.uid,
+          items,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      );
+
+    if (error) throw error;
+
     res.json(items);
   } catch (error) {
     console.error('Error guardando carrito:', error);
@@ -71,11 +67,22 @@ router.put('/cart', verifyToken, (req, res) => {
   }
 });
 
-router.delete('/cart', verifyToken, (req, res) => {
+// DELETE /cart - vaciar el carrito del usuario autenticado
+router.delete('/cart', verifyToken, async (req, res) => {
   try {
-    const carts = readCarts();
-    delete carts[req.user.uid];
-    writeCarts(carts);
+    const { error } = await supabase
+      .from('carts')
+      .upsert(
+        {
+          user_id: req.user.uid,
+          items: [],
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      );
+
+    if (error) throw error;
+
     res.json({ message: 'Carrito vaciado' });
   } catch (error) {
     console.error('Error vaciando carrito:', error);
